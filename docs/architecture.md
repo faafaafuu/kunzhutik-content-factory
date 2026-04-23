@@ -1,0 +1,67 @@
+# System Architecture
+
+## Why this stack
+
+- `Python + FastAPI`: fast delivery, clean typing, strong ecosystem for AI/media automation.
+- `SQLAlchemy 2 + Alembic`: explicit schema control and production migration flow.
+- `Celery + Redis`: pragmatic async pipeline with retries and task routing.
+- `PostgreSQL`: source of truth for content lifecycle and auditability.
+- `MinIO/S3`: media asset storage abstraction.
+- `aiogram`: Telegram moderation workflow with callback support.
+- `ffmpeg` is planned for creative render stage.
+
+## Module Boundaries
+
+### Ingestion
+
+- input validation
+- object storage writes
+- upload lifecycle
+- task scheduling
+
+### Vision Analysis
+
+- visual feature extraction
+- dish metadata
+- scene mood and plating descriptors
+
+### Content Generation
+
+- persona layer for `Кунжутик`
+- per-platform copy generation
+- scripts, CTA, short and long variants
+
+### Creative Render
+
+- layout templates
+- mascot overlay
+- aspect-ratio exports
+
+### Voice
+
+- Russian TTS orchestration
+- timing and pacing metadata
+
+### Moderation and Approval
+
+- preview packaging
+- Telegram dispatch
+- approve/reject/regenerate actions
+
+### Publishing
+
+- platform adapters
+- idempotent publish attempts
+- result capture and audit trail
+
+## Data Lifecycle
+
+`Upload -> MediaAsset -> AnalysisResult -> ContentDraft -> ApprovalTask -> PublicationTask -> PublicationResult`
+
+Audit events are written on all state transitions.
+
+## Evolution Strategy
+
+Stage 1 keeps the workflow in one Python codebase with explicit modules.
+Stage 2+ can split heavy modules into independent deployable services without changing the database contract.
+
