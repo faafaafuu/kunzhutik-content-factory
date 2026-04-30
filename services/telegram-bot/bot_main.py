@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.approval_task import ApprovalTask
 from app.services.approvals import apply_approval_decision
+from app.store.catalog import BUSINESS_PROFILE, CATEGORIES, MENU_ITEMS
 from shared.enums import ApprovalStatus, ApprovalTrigger
 
 logging.basicConfig(level=settings.log_level)
@@ -44,10 +45,46 @@ async def start(message: Message) -> None:
 
     mode = "открытый многопользовательский режим" if settings.telegram_open_access else "режим фиксированного approval-чата"
     await message.answer(
-        "Кунжутик approval bot активен.\n"
+        f"{BUSINESS_PROFILE['brand_name']} bot активен.\n"
         f"Режим: {mode}.\n"
-        "Команды: /pending для списка ожидающих задач."
+        "Команды: /menu, /contacts, /pending."
     )
+
+
+@router.message(F.text == "/contacts")
+async def contacts(message: Message) -> None:
+    if await reject_if_forbidden(message=message):
+        return
+
+    await message.answer(
+        f"{BUSINESS_PROFILE['brand_name']}\n"
+        f"{BUSINESS_PROFILE['city']}, {BUSINESS_PROFILE['address']}\n"
+        f"Телефон: {BUSINESS_PROFILE['phone']}\n"
+        f"График: {BUSINESS_PROFILE['hours']}\n\n"
+        f"Яндекс.Карты: {BUSINESS_PROFILE['map_url']}\n"
+        f"Instagram: {BUSINESS_PROFILE['instagram_url']}\n"
+        f"VK: {BUSINESS_PROFILE['vk_url']}"
+    )
+
+
+@router.message(F.text == "/menu")
+async def menu(message: Message) -> None:
+    if await reject_if_forbidden(message=message):
+        return
+
+    category_titles = {category["id"]: category["title"] for category in CATEGORIES}
+    lines = [f"Меню {BUSINESS_PROFILE['brand_name']}:"]
+    for category in CATEGORIES[:6]:
+        items = [item for item in MENU_ITEMS if item["category_id"] == category["id"]][:4]
+        if not items:
+            continue
+        lines.append("")
+        lines.append(category_titles[category["id"]])
+        for item in items:
+            lines.append(f"- {item['title']} — {item['price']} ₽, {item['weight']}")
+    lines.append("")
+    lines.append("Полное меню доступно на сайте.")
+    await message.answer("\n".join(lines))
 
 
 @router.message(F.text == "/pending")
