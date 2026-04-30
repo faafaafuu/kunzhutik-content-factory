@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f6c53f" />
+    <meta name="theme-color" content="#f7f4ee" />
     <title>Кунжут</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800;900&family=Unbounded:wght@700;800;900&display=swap" rel="stylesheet" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="/static/styles.css?v=20260430-storefront-v4" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260430-storefront-v5" />
   </head>
   <body>
     <div class="site-shell">
@@ -23,7 +23,10 @@
         </a>
         <nav class="topnav" id="topnav"></nav>
         <button class="cart-button" id="cart-pill" type="button" aria-label="Корзина">
-          <span class="cart-icon" aria-hidden="true">⌁</span>
+          <svg class="cart-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M6.5 8.5h11l-.9 10.1a2 2 0 0 1-2 1.8H9.4a2 2 0 0 1-2-1.8L6.5 8.5Z" />
+            <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5" />
+          </svg>
           <strong id="cart-count">0</strong>
         </button>
       </header>
@@ -36,11 +39,6 @@
             <p class="hero-text">
               Яркое меню, понятная корзина и быстрый заказ оператору. Выберите раздел, соберите набор и подтвердите контакты только в конце.
             </p>
-            <div class="hero-stats" aria-label="Коротко о заказе">
-              <span><strong>45+</strong> позиций</span>
-              <span><strong>12</strong> разделов</span>
-              <span><strong>TG</strong> заказ</span>
-            </div>
             <div class="hero-tags" id="hero-tags"></div>
             <div class="hero-actions">
               <a class="button button-primary" href="#menu">Выбрать блюда</a>
@@ -135,22 +133,33 @@
 
         <form class="checkout-form" id="checkout-form" hidden>
           <div class="auth-panel">
-            <span>Быстрый вход</span>
+            <span>Профиль заказа</span>
             <div class="auth-grid">
               <button class="auth-button" type="button" data-auth="telegram" aria-label="Telegram">
-                <span class="auth-icon auth-telegram">T</span>
+                <svg class="auth-icon auth-telegram" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M21.7 4.2 18.5 19c-.2 1-.8 1.2-1.7.7l-4.8-3.5-2.3 2.2c-.3.3-.5.5-1 .5l.4-5 9.1-8.3c.4-.4-.1-.6-.6-.2L6.3 12.5 1.5 11c-1-.3-1-1 .2-1.5L20.4 2.3c.9-.3 1.7.2 1.3 1.9Z" />
+                </svg>
               </button>
               <button class="auth-button" type="button" data-auth="phone" aria-label="Телефон">
-                <span class="auth-icon auth-phone">☎</span>
+                <svg class="auth-icon auth-phone" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M6.6 3.5 9.1 3a1.6 1.6 0 0 1 1.8.9l1.1 2.7a1.6 1.6 0 0 1-.4 1.8L10.2 9.8a12.2 12.2 0 0 0 4 4l1.4-1.4a1.6 1.6 0 0 1 1.8-.4l2.7 1.1a1.6 1.6 0 0 1 .9 1.8l-.5 2.5a2.6 2.6 0 0 1-2.6 2.1A15.9 15.9 0 0 1 4.5 5.9a2.6 2.6 0 0 1 2.1-2.4Z" />
+                </svg>
               </button>
               <button class="auth-button" type="button" data-auth="vk" aria-label="VK" title="Нужно подключить VK OAuth на сервере">
-                <span class="auth-icon auth-vk">vk</span>
+                <svg class="auth-icon auth-vk" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M3.4 7.2c.1 6.3 3.3 10.1 9 10.1h.3v-3.6c2 .2 3.5 1.7 4.1 3.6h3c-.8-2.8-2.8-4.4-4.1-5 1.3-.8 3-2.6 3.4-5.1h-2.8c-.6 2-2.2 3.8-3.6 4V7.2H9.9v7c-1.6-.4-3.7-2.4-3.8-7H3.4Z" />
+                </svg>
               </button>
               <button class="auth-button" type="button" data-auth="google" aria-label="Google" title="Нужно подключить Google OAuth на сервере">
-                <span class="auth-icon auth-google">G</span>
+                <svg class="auth-icon auth-google" aria-hidden="true" viewBox="0 0 24 24">
+                  <path class="g-blue" d="M21.6 12.2c0-.8-.1-1.4-.2-2.1H12v3.9h5.4a4.7 4.7 0 0 1-2 3.1v2.5h3.2c1.9-1.7 3-4.2 3-7.4Z" />
+                  <path class="g-green" d="M12 22c2.7 0 5-0.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1a5.9 5.9 0 0 1-5.5-4.1H3.2v2.6A10 10 0 0 0 12 22Z" />
+                  <path class="g-yellow" d="M6.5 14A6 6 0 0 1 6.2 12c0-.7.1-1.3.3-2V7.4H3.2A10 10 0 0 0 2.1 12c0 1.6.4 3.2 1.1 4.6L6.5 14Z" />
+                  <path class="g-red" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A9.8 9.8 0 0 0 12 2 10 10 0 0 0 3.2 7.4L6.5 10A5.9 5.9 0 0 1 12 5.9Z" />
+                </svg>
               </button>
             </div>
-            <p class="auth-status" id="auth-status">Откройте заказ из Telegram, чтобы подставить имя автоматически.</p>
+            <p class="auth-status" id="auth-status">Telegram подтянет имя, если открыть сайт кнопкой из бота. VK и Google подключаются после выдачи OAuth-ключей.</p>
           </div>
           <input name="customer_name" placeholder="Имя" required />
           <input name="customer_phone" placeholder="Телефон" required />
@@ -169,6 +178,6 @@
       </aside>
     </div>
 
-    <script src="/static/app.js?v=20260430-storefront-v4" defer></script>
+    <script src="/static/app.js?v=20260430-storefront-v5" defer></script>
   </body>
 </html>

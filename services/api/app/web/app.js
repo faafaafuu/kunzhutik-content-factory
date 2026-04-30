@@ -4,6 +4,8 @@ const state = {
   cart: new Map(),
 };
 
+const TELEGRAM_BOT_URL = "https://t.me/orderbookk_bot?start=order";
+
 const els = {
   topnav: document.getElementById("topnav"),
   features: document.getElementById("features"),
@@ -282,9 +284,12 @@ function showCheckout() {
 function applyQuickAuth(provider) {
   if (provider === "telegram") {
     const didPrefill = prefillTelegramUser();
+    if (!didPrefill) {
+      window.open(TELEGRAM_BOT_URL, "_blank", "noopener,noreferrer");
+    }
     const text = didPrefill
       ? "Telegram-профиль подставлен в заказ."
-      : "Telegram не передал профиль. Откройте сайт кнопкой из бота /menu или /start.";
+      : "Открыл бот Telegram. Нажмите там кнопку сайта, чтобы вернуться с профилем.";
     els.authStatus.textContent = text;
     els.checkoutStatus.textContent = text;
     return;
@@ -295,7 +300,7 @@ function applyQuickAuth(provider) {
     els.checkoutStatus.textContent = "Введите телефон, оператор свяжется для подтверждения.";
     return;
   }
-  els.authStatus.textContent = `${provider.toUpperCase()} пока не подключен: нужны OAuth-ключи и callback на сервере. Сейчас работает Telegram из бота.`;
+  els.authStatus.textContent = `${provider.toUpperCase()} не подключен: нужны OAuth client id/secret и callback-домен. Без них безопасная авторизация невозможна.`;
   els.checkoutStatus.textContent = els.authStatus.textContent;
 }
 
