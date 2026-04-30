@@ -3,133 +3,135 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f1e8" />
     <title>Кунжут</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="/static/styles.css?v=20260430-menu-webapp" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260430-storefront-v2" />
   </head>
   <body>
-    <div class="site-frame">
+    <div class="site-shell">
       <header class="topbar">
-        <a class="brand" href="#hero">
-          <span class="brand-mark">K</span>
-          <span class="brand-copy">
+        <a class="brand" href="#menu" aria-label="Кунжут">
+          <span class="brand-mark">К</span>
+          <span>
             <strong id="brand-name">Кунжут</strong>
-            <span id="brand-address">ул. Дзержинского, 18</span>
+            <small id="brand-address">ул. Дзержинского, 18</small>
           </span>
         </a>
         <nav class="topnav" id="topnav"></nav>
-        <button class="cart-pill" id="cart-pill" type="button">Корзина <span id="cart-count">0</span></button>
+        <button class="cart-button" id="cart-pill" type="button">
+          <span>Корзина</span>
+          <strong id="cart-count">0</strong>
+        </button>
       </header>
 
-      <main class="page">
-        <section class="hero" id="hero">
-          <div class="hero-copy">
-            <p class="eyebrow">Кунжут · ул. Дзержинского, 18</p>
-            <h1>Донеры, турецкие сладости и горячие напитки рядом с вами.</h1>
+      <main>
+        <section class="hero">
+          <div>
+            <p class="eyebrow">Солнечногорск · турецкая кухня</p>
+            <h1>Донеры, кофе и восточные сладости без лишних шагов.</h1>
             <p class="hero-text">
-              Быстрый заказ из меню, актуальные предложения и короткие ролики от Кунжутика в одном месте. Забирайте самовывозом или оформляйте доставку.
+              Выберите категорию, добавьте позиции в корзину и оформите заказ на финальном шаге. Заказ сразу уйдет оператору в Telegram.
             </p>
-            <div class="hero-actions">
-              <a class="button button-primary" href="#menu">Открыть меню</a>
-              <a class="button button-secondary" id="map-link" href="#" target="_blank" rel="noreferrer">Открыть карту</a>
-            </div>
-            <div class="social-links" id="social-links"></div>
-            <div class="hero-stats" id="features"></div>
           </div>
-          <div class="hero-stage">
-            <div class="hero-panel hero-panel-dark">
-              <p class="eyebrow eyebrow-invert">Сегодня в Кунжуте</p>
-              <h2>Горячее меню, быстрый checkout и контент для соцсетей.</h2>
-              <p>Витрина принимает заказы, а пайплайн готовит ролики и превью для Instagram, VK и Яндекс.Карт.</p>
-            </div>
-            <div class="hero-panel hero-panel-soft" id="promos"></div>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#menu">Выбрать блюда</a>
+            <a class="button button-secondary" id="map-link" href="#" target="_blank" rel="noreferrer">Как добраться</a>
           </div>
         </section>
 
-        <section class="demo-section" id="demo">
-          <div class="section-head section-head-wide">
-            <div>
-              <p class="eyebrow">Видео</p>
-              <h2>Превью роликов прямо на главной.</h2>
-            </div>
-            <p class="section-note">
-              Здесь встроены последние render assets пайплайна. Можно открыть плеер, посмотреть кадр и сразу понять, как выглядит social-output.
-            </p>
-          </div>
-          <div class="demo-grid" id="demo-grid"></div>
-        </section>
+        <section class="quick-info" id="features"></section>
 
         <section class="menu-section" id="menu">
-          <div class="section-head section-head-wide">
+          <div class="section-head">
             <div>
               <p class="eyebrow">Меню</p>
-              <h2>Каталог Кунжута в спокойной сетке.</h2>
+              <h2 id="active-category-title">Категории</h2>
             </div>
-            <p class="section-note">Быстрые категории, чистые карточки и короткий путь от выбора до заказа.</p>
+            <p class="section-note">Переключайте разделы кнопками. На экране только выбранная категория.</p>
           </div>
-          <div class="category-tabs" id="category-tabs"></div>
-          <div class="menu-sections" id="menu-grid"></div>
-        </section>
-
-        <section class="info-section" id="delivery">
-          <div class="section-head section-head-wide">
-            <div>
-              <p class="eyebrow">Контакты</p>
-              <h2>Кунжут на карте и в соцсетях.</h2>
-            </div>
-          </div>
-          <div class="info-grid">
-            <article class="info-card">
-              <span>01</span>
-              <h3>Адрес</h3>
-              <p id="contact-address">ул. Дзержинского, 18</p>
-            </article>
-            <article class="info-card">
-              <span>02</span>
-              <h3>Навигация</h3>
-              <p><a id="contact-map-link" href="#" target="_blank" rel="noreferrer">Открыть в Яндекс.Картах</a></p>
-            </article>
-            <article class="info-card">
-              <span>03</span>
-              <h3>Соцсети</h3>
-              <p id="contact-social-links"></p>
-            </article>
-          </div>
+          <div class="category-tabs" id="category-tabs" role="tablist" aria-label="Категории меню"></div>
+          <div class="menu-group-grid" id="menu-grid"></div>
         </section>
       </main>
+
+      <footer class="footer" id="contacts">
+        <div>
+          <strong>Кунжут</strong>
+          <p id="contact-address">ул. Дзержинского, 18</p>
+        </div>
+        <div>
+          <strong>Контакты</strong>
+          <p id="contact-phone"></p>
+          <p id="contact-hours"></p>
+        </div>
+        <div>
+          <strong>Ссылки</strong>
+          <p class="footer-links" id="contact-links"></p>
+        </div>
+      </footer>
+
+      <div class="cart-bar" id="cart-bar" hidden>
+        <div>
+          <strong id="cart-bar-count">0 позиций</strong>
+          <span id="cart-bar-total">0 ₽</span>
+        </div>
+        <button class="button button-primary" id="open-cart" type="button">Перейти к заказу</button>
+      </div>
 
       <aside class="cart-drawer" id="cart-drawer" aria-hidden="true">
         <div class="cart-header">
           <div>
-            <p class="eyebrow">Checkout</p>
-            <h2>Оформить заказ</h2>
+            <p class="eyebrow">Заказ</p>
+            <h2 id="cart-title">Проверьте корзину</h2>
           </div>
-          <button class="icon-button" id="cart-close" type="button">×</button>
+          <button class="icon-button" id="cart-close" type="button" aria-label="Закрыть">×</button>
         </div>
-        <div class="cart-items" id="cart-items"></div>
-        <div class="cart-summary">
-          <div class="summary-row">
-            <span>Итого</span>
-            <strong id="cart-total">0 ₽</strong>
+
+        <div class="checkout-steps">
+          <span class="active" id="step-cart">1. Корзина</span>
+          <span id="step-checkout">2. Оформление</span>
+        </div>
+
+        <div class="cart-panel" id="cart-review">
+          <div class="cart-items" id="cart-items"></div>
+          <div class="cart-summary">
+            <div class="summary-row">
+              <span>Итого</span>
+              <strong id="cart-total">0 ₽</strong>
+            </div>
+            <button class="button button-primary button-block" id="checkout-next" type="button">Оформить заказ</button>
+            <p class="form-note">Контакты и адрес появятся только на следующем шаге.</p>
           </div>
-          <form class="checkout-form" id="checkout-form">
-            <input name="customer_name" placeholder="Имя" required />
-            <input name="customer_phone" placeholder="Телефон" required />
-            <input name="delivery_address" placeholder="Адрес доставки" required />
-            <input name="delivery_slot" placeholder="Когда привезти" />
-            <select name="payment_method">
-              <option value="card_on_delivery">Картой при получении</option>
-              <option value="cash">Наличными</option>
-              <option value="online">Онлайн</option>
-            </select>
-            <textarea name="comment" placeholder="Комментарий к заказу"></textarea>
-            <button class="button button-primary button-block" type="submit">Подтвердить</button>
-            <p class="form-note" id="checkout-status">После отправки заказ сразу появится в серверной админке.</p>
-          </form>
         </div>
+
+        <form class="checkout-form" id="checkout-form" hidden>
+          <div class="auth-panel">
+            <span>Быстрый вход</span>
+            <div class="auth-grid">
+              <button type="button" data-auth="telegram">Telegram</button>
+              <button type="button" data-auth="phone">Телефон</button>
+              <button type="button" data-auth="vk">VK</button>
+              <button type="button" data-auth="google">Google</button>
+            </div>
+          </div>
+          <input name="customer_name" placeholder="Имя" required />
+          <input name="customer_phone" placeholder="Телефон" required />
+          <input name="delivery_address" placeholder="Адрес доставки или самовывоз" required />
+          <input name="delivery_slot" placeholder="Когда приготовить" />
+          <select name="payment_method">
+            <option value="card_on_delivery">Картой при получении</option>
+            <option value="cash">Наличными</option>
+            <option value="online">Онлайн</option>
+          </select>
+          <textarea name="comment" placeholder="Комментарий к заказу"></textarea>
+          <button class="button button-primary button-block" type="submit">Подтвердить заказ</button>
+          <button class="button button-secondary button-block" id="checkout-back" type="button">Назад в корзину</button>
+          <p class="form-note" id="checkout-status">После подтверждения заказ уйдет оператору в Telegram.</p>
+        </form>
       </aside>
     </div>
 
-    <script src="/static/app.js?v=20260430-menu-webapp" defer></script>
+    <script src="/static/app.js?v=20260430-storefront-v2" defer></script>
   </body>
-  </html>
+</html>

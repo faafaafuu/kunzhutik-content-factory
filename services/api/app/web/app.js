@@ -1,96 +1,111 @@
-const DEMO_UPLOAD_ID = "60a63bfc-1cd4-48a2-bf5d-5b6c692ccef0";
-
 const state = {
   menu: null,
+  activeCategoryId: null,
   cart: new Map(),
-  demoAssets: [],
 };
 
 const els = {
   topnav: document.getElementById("topnav"),
   features: document.getElementById("features"),
-  promos: document.getElementById("promos"),
   brandName: document.getElementById("brand-name"),
   brandAddress: document.getElementById("brand-address"),
   mapLink: document.getElementById("map-link"),
-  socialLinks: document.getElementById("social-links"),
   contactAddress: document.getElementById("contact-address"),
-  contactMapLink: document.getElementById("contact-map-link"),
-  contactSocialLinks: document.getElementById("contact-social-links"),
+  contactPhone: document.getElementById("contact-phone"),
+  contactHours: document.getElementById("contact-hours"),
+  contactLinks: document.getElementById("contact-links"),
   categoryTabs: document.getElementById("category-tabs"),
+  activeCategoryTitle: document.getElementById("active-category-title"),
   menuGrid: document.getElementById("menu-grid"),
-  demoGrid: document.getElementById("demo-grid"),
   cartDrawer: document.getElementById("cart-drawer"),
+  cartReview: document.getElementById("cart-review"),
   cartItems: document.getElementById("cart-items"),
   cartTotal: document.getElementById("cart-total"),
   cartCount: document.getElementById("cart-count"),
   cartPill: document.getElementById("cart-pill"),
+  cartBar: document.getElementById("cart-bar"),
+  cartBarCount: document.getElementById("cart-bar-count"),
+  cartBarTotal: document.getElementById("cart-bar-total"),
+  openCart: document.getElementById("open-cart"),
   cartClose: document.getElementById("cart-close"),
+  checkoutNext: document.getElementById("checkout-next"),
+  checkoutBack: document.getElementById("checkout-back"),
   checkoutForm: document.getElementById("checkout-form"),
   checkoutStatus: document.getElementById("checkout-status"),
+  cartTitle: document.getElementById("cart-title"),
+  stepCart: document.getElementById("step-cart"),
+  stepCheckout: document.getElementById("step-checkout"),
 };
 
 bootstrap().catch((error) => {
   console.error(error);
-  els.checkoutStatus.textContent = "Не удалось загрузить storefront.";
+  els.menuGrid.innerHTML = "<p class='empty-state'>Не удалось загрузить меню.</p>";
 });
 
 async function bootstrap() {
-  const [menuResponse, demoResponse] = await Promise.all([
-    fetch("/api/v1/store/menu"),
-    fetch(`/api/v1/uploads/${DEMO_UPLOAD_ID}/assets`),
-  ]);
+  const response = await fetch("/api/v1/store/menu", { cache: "no-store" });
+  state.menu = await response.json();
+  state.activeCategoryId = state.menu.categories[0]?.id || null;
 
-  state.menu = await menuResponse.json();
-  state.demoAssets = demoResponse.ok ? await demoResponse.json() : { assets: [] };
-
+  setupTelegramTheme();
   renderBusinessProfile();
   renderTopnav();
   renderFeatures();
-  renderPromos();
   renderCategories();
   renderMenu();
-  renderDemo();
   renderCart();
   bindEvents();
 }
 
 function bindEvents() {
-  els.cartPill.addEventListener("click", () => els.cartDrawer.classList.add("open"));
-  els.cartClose.addEventListener("click", () => els.cartDrawer.classList.remove("open"));
+  els.cartPill.addEventListener("click", openCartReview);
+  els.openCart.addEventListener("click", openCartReview);
+  els.cartClose.addEventListener("click", closeCart);
+  els.checkoutNext.addEventListener("click", showCheckout);
+  els.checkoutBack.addEventListener("click", showCartReview);
   els.checkoutForm.addEventListener("submit", submitOrder);
+  document.querySelectorAll("[data-auth]").forEach((button) => {
+    button.addEventListener("click", () => applyQuickAuth(button.dataset.auth));
+  });
+}
+
+function setupTelegramTheme() {
+  if (!window.Telegram?.WebApp) {
+    return;
+  }
+  window.Telegram.WebApp.ready();
+  window.Telegram.WebApp.expand();
 }
 
 function renderTopnav() {
   const links = [
-    { href: "#demo", label: "Видео" },
     { href: "#menu", label: "Меню" },
-    { href: "#delivery", label: "Контакты" },
+    { href: "#contacts", label: "Контакты" },
   ];
   els.topnav.innerHTML = links.map((link) => `<a href="${link.href}">${link.label}</a>`).join("");
 }
 
 function renderBusinessProfile() {
   const business = state.menu.business || {};
-  const socialLinks = [
+  const links = [
+    business.map_url ? { href: business.map_url, label: "Карты" } : null,
     business.instagram_url ? { href: business.instagram_url, label: "Instagram" } : null,
     business.vk_url ? { href: business.vk_url, label: "VK" } : null,
   ].filter(Boolean);
 
   els.brandName.textContent = state.menu.brand_name || business.brand_name || "Кунжут";
   els.brandAddress.textContent = business.address || "ул. Дзержинского, 18";
-  els.contactAddress.textContent = business.address || "ул. Дзержинского, 18";
+  els.contactAddress.textContent = `${business.city || "Солнечногорск"}, ${business.address || "ул. Дзержинского, 18"}`;
+  els.contactPhone.textContent = business.phone || "";
+  els.contactHours.textContent = business.hours || "";
 
   if (business.map_url) {
     els.mapLink.href = business.map_url;
-    els.contactMapLink.href = business.map_url;
   }
 
-  const socialHtml = socialLinks
+  els.contactLinks.innerHTML = links
     .map((link) => `<a href="${link.href}" target="_blank" rel="noreferrer">${link.label}</a>`)
     .join("");
-  els.socialLinks.innerHTML = socialHtml;
-  els.contactSocialLinks.innerHTML = socialHtml;
 }
 
 function renderFeatures() {
@@ -99,55 +114,39 @@ function renderFeatures() {
       (feature) => `
         <article>
           <strong>${feature.title}</strong>
-          <p>${feature.text}</p>
+          <span>${feature.text}</span>
         </article>
       `,
     )
     .join("");
 }
 
-function renderPromos() {
-  els.promos.innerHTML = `
-    <p class="eyebrow">Current Offers</p>
-    <div class="promo-list">
-      ${state.menu.promos
-        .map(
-          (promo) => `
-            <article>
-              <strong>${promo.title}</strong>
-              <p>${promo.text}</p>
-            </article>
-          `,
-        )
-        .join("")}
-    </div>
-  `;
-}
-
 function renderCategories() {
-  els.categoryTabs.innerHTML = state.menu.categories.map((category) => `<a href="#cat-${category.id}">${category.title}</a>`).join("");
+  els.categoryTabs.innerHTML = state.menu.categories
+    .map(
+      (category) => `
+        <button class="${category.id === state.activeCategoryId ? "active" : ""}" type="button" data-category="${category.id}">
+          ${category.title}
+        </button>
+      `,
+    )
+    .join("");
+
+  els.categoryTabs.querySelectorAll("[data-category]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.activeCategoryId = button.dataset.category;
+      renderCategories();
+      renderMenu();
+    });
+  });
 }
 
 function renderMenu() {
-  const grouped = new Map(state.menu.categories.map((category) => [category.id, []]));
-  for (const item of state.menu.items) {
-    grouped.get(item.category_id)?.push(item);
-  }
+  const category = state.menu.categories.find((item) => item.id === state.activeCategoryId);
+  const items = state.menu.items.filter((item) => item.category_id === state.activeCategoryId);
+  els.activeCategoryTitle.textContent = category?.title || "Меню";
 
-  els.menuGrid.innerHTML = state.menu.categories
-    .map((category) => {
-      const cards = (grouped.get(category.id) || []).map(renderItemCard).join("");
-      return `
-        <section id="cat-${category.id}">
-          <div class="section-head">
-            <p class="eyebrow">${category.title}</p>
-          </div>
-          <div class="menu-group-grid">${cards}</div>
-        </section>
-      `;
-    })
-    .join("");
-
+  els.menuGrid.innerHTML = items.map(renderItemCard).join("");
   els.menuGrid.querySelectorAll("[data-add-item]").forEach((button) => {
     button.addEventListener("click", () => addToCart(button.dataset.addItem));
   });
@@ -159,11 +158,11 @@ function renderItemCard(item) {
       <div class="menu-art">
         ${item.image_url ? `<img src="${item.image_url}" alt="${item.title}" loading="lazy" />` : ""}
       </div>
-      <div class="menu-meta">
-        <span class="tag">${item.tag}</span>
-        ${item.badge ? `<span class="menu-badge">${item.badge}</span>` : ""}
-      </div>
       <div class="menu-copy">
+        <div class="menu-meta">
+          <span>${item.tag}</span>
+          ${item.badge ? `<strong>${item.badge}</strong>` : ""}
+        </div>
         <h3>${item.title}</h3>
         <p>${item.description}</p>
       </div>
@@ -178,85 +177,123 @@ function renderItemCard(item) {
   `;
 }
 
-function renderDemo() {
-  const assets = Array.isArray(state.demoAssets.assets) ? state.demoAssets.assets : [];
-  const videos = assets.filter((asset) => asset.kind === "video");
-  const previews = new Map(assets.filter((asset) => asset.kind === "preview").map((asset) => [asset.draft_kind, asset]));
-
-  if (!videos.length) {
-    els.demoGrid.innerHTML = "<article class='demo-card'><div class='demo-copy'><p>Demo assets пока не готовы.</p></div></article>";
-    return;
-  }
-
-  els.demoGrid.innerHTML = videos
-    .map((video) => {
-      const preview = previews.get(video.draft_kind);
-      return `
-        <article class="demo-card">
-          <div class="demo-video">
-            <video controls muted playsinline preload="metadata" poster="${preview?.download_url || ""}">
-              <source src="${video.download_url}" type="video/mp4" />
-            </video>
-          </div>
-          <div class="demo-copy">
-            <div class="demo-meta">
-              <span>${labelDraft(video.draft_kind)}</span>
-              <span>${labelPlatform(video.platform)}</span>
-            </div>
-            <h3>${demoTitle(video.draft_kind)}</h3>
-            <p class="section-note">Актуальный render pipeline: mascот overlay, вертикальный motion и отдельная композиция под тип social-креатива.</p>
-            <div class="demo-actions">
-              <a class="demo-link" href="${video.download_url}" target="_blank" rel="noreferrer">Открыть mp4</a>
-              ${preview ? `<a class="demo-link" href="${preview.download_url}" target="_blank" rel="noreferrer">Открыть preview</a>` : ""}
-            </div>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
+function addToCart(itemId) {
+  state.cart.set(itemId, (state.cart.get(itemId) || 0) + 1);
+  renderCart();
+  pulseCartBar();
 }
 
-function addToCart(itemId) {
-  const current = state.cart.get(itemId) || 0;
-  state.cart.set(itemId, current + 1);
+function changeQuantity(itemId, delta) {
+  const next = (state.cart.get(itemId) || 0) + delta;
+  if (next <= 0) {
+    state.cart.delete(itemId);
+  } else {
+    state.cart.set(itemId, next);
+  }
   renderCart();
-  els.cartDrawer.classList.add("open");
 }
 
 function renderCart() {
-  const items = state.menu ? state.menu.items.filter((item) => state.cart.has(item.id)) : [];
+  const items = getCartItems();
   const totalCount = [...state.cart.values()].reduce((sum, quantity) => sum + quantity, 0);
-  const total = items.reduce((sum, item) => sum + item.price * state.cart.get(item.id), 0);
+  const total = getCartTotal(items);
+
   els.cartCount.textContent = String(totalCount);
   els.cartTotal.textContent = formatPrice(total);
+  els.cartBarCount.textContent = formatItemsCount(totalCount);
+  els.cartBarTotal.textContent = formatPrice(total);
+  els.cartBar.hidden = totalCount === 0;
+  els.checkoutNext.disabled = totalCount === 0;
 
   if (!items.length) {
-    els.cartItems.innerHTML = "<p class='form-note'>Корзина пустая. Добавь позиции из меню, чтобы оформить заказ.</p>";
+    els.cartItems.innerHTML = "<p class='empty-state'>Корзина пустая. Добавьте блюдо из меню.</p>";
     return;
   }
 
   els.cartItems.innerHTML = items
     .map(
-      (item) => `
+      ({ item, quantity }) => `
         <div class="cart-line">
           <div>
             <strong>${item.title}</strong>
-            <small>${item.weight}</small>
+            <small>${formatPrice(item.price)} · ${item.weight}</small>
           </div>
-          <div>
-            <strong>${state.cart.get(item.id)} × ${formatPrice(item.price)}</strong>
+          <div class="qty-control">
+            <button type="button" data-qty="${item.id}" data-delta="-1">−</button>
+            <span>${quantity}</span>
+            <button type="button" data-qty="${item.id}" data-delta="1">+</button>
           </div>
         </div>
       `,
     )
     .join("");
+
+  els.cartItems.querySelectorAll("[data-qty]").forEach((button) => {
+    button.addEventListener("click", () => changeQuantity(button.dataset.qty, Number(button.dataset.delta)));
+  });
+}
+
+function openCartReview() {
+  showCartReview();
+  els.cartDrawer.classList.add("open");
+  els.cartDrawer.setAttribute("aria-hidden", "false");
+}
+
+function closeCart() {
+  els.cartDrawer.classList.remove("open");
+  els.cartDrawer.setAttribute("aria-hidden", "true");
+}
+
+function showCartReview() {
+  els.cartTitle.textContent = "Проверьте корзину";
+  els.cartReview.hidden = false;
+  els.checkoutForm.hidden = true;
+  els.stepCart.classList.add("active");
+  els.stepCheckout.classList.remove("active");
+}
+
+function showCheckout() {
+  if (!state.cart.size) {
+    return;
+  }
+  els.cartTitle.textContent = "Оформление";
+  els.cartReview.hidden = true;
+  els.checkoutForm.hidden = false;
+  els.stepCart.classList.remove("active");
+  els.stepCheckout.classList.add("active");
+  prefillTelegramUser();
+}
+
+function applyQuickAuth(provider) {
+  if (provider === "telegram") {
+    prefillTelegramUser();
+    els.checkoutStatus.textContent = "Данные Telegram подставлены, если они доступны.";
+    return;
+  }
+  if (provider === "phone") {
+    els.checkoutForm.customer_phone.focus();
+    els.checkoutStatus.textContent = "Введите телефон, оператор свяжется для подтверждения.";
+    return;
+  }
+  els.checkoutStatus.textContent = `${provider.toUpperCase()}-вход подготовлен в интерфейсе. Серверную OAuth-интеграцию подключим отдельно.`;
+}
+
+function prefillTelegramUser() {
+  const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
+  if (!user) {
+    return;
+  }
+  const name = [user.first_name, user.last_name].filter(Boolean).join(" ");
+  if (name && !els.checkoutForm.customer_name.value) {
+    els.checkoutForm.customer_name.value = name;
+  }
 }
 
 async function submitOrder(event) {
   event.preventDefault();
   const items = [...state.cart.entries()].map(([item_id, quantity]) => ({ item_id, quantity }));
   if (!items.length) {
-    els.checkoutStatus.textContent = "Сначала добавь что-нибудь в корзину.";
+    els.checkoutStatus.textContent = "Сначала добавьте блюдо в корзину.";
     return;
   }
 
@@ -289,7 +326,7 @@ async function submitOrder(event) {
   state.cart.clear();
   els.checkoutForm.reset();
   renderCart();
-  els.checkoutStatus.textContent = `Заказ ${result.order_number} сохранён.`;
+  els.checkoutStatus.textContent = `Заказ ${result.order_number} принят.`;
 
   if (window.Telegram?.WebApp) {
     window.Telegram.WebApp.HapticFeedback?.notificationOccurred("success");
@@ -298,30 +335,34 @@ async function submitOrder(event) {
   }
 }
 
+function getCartItems() {
+  if (!state.menu) {
+    return [];
+  }
+  return state.menu.items
+    .filter((item) => state.cart.has(item.id))
+    .map((item) => ({ item, quantity: state.cart.get(item.id) }));
+}
+
+function getCartTotal(items) {
+  return items.reduce((sum, { item, quantity }) => sum + item.price * quantity, 0);
+}
+
+function pulseCartBar() {
+  els.cartBar.classList.remove("pulse");
+  requestAnimationFrame(() => els.cartBar.classList.add("pulse"));
+}
+
 function formatPrice(price) {
   return new Intl.NumberFormat("ru-RU").format(price) + " ₽";
 }
 
-function labelDraft(value) {
-  return {
-    post: "Post Video",
-    story: "Story Video",
-    news: "Local News Video",
-  }[value] || value;
-}
-
-function labelPlatform(value) {
-  return {
-    instagram: "Instagram",
-    vk: "VK",
-    yandex_maps: "Yandex Maps",
-  }[value] || value;
-}
-
-function demoTitle(value) {
-  return {
-    post: "Продуктовый ролик с hero-подачей",
-    story: "Вертикальная story-версия для быстрого просмотра",
-    news: "Спокойный локальный формат для карточек и новостей",
-  }[value] || "Demo video";
+function formatItemsCount(count) {
+  if (count % 10 === 1 && count % 100 !== 11) {
+    return `${count} позиция`;
+  }
+  if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) {
+    return `${count} позиции`;
+  }
+  return `${count} позиций`;
 }
