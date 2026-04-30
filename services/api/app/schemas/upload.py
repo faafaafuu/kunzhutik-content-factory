@@ -25,3 +25,25 @@ class UploadTimelineEvent(BaseModel):
     created_at: datetime
     payload: dict
 
+
+class UploadAssetRead(BaseModel):
+    id: UUID
+    kind: str
+    mime_type: str
+    file_name: str
+    file_size: int
+    width: int | None = None
+    height: int | None = None
+    duration_seconds: float | None = None
+    storage_key: str
+    content_draft_id: UUID | None = None
+    draft_kind: str | None = None
+    platform: str | None = None
+    voice_asset_id: UUID | None = None
+    video_asset_id: UUID | None = None
+    download_url: str
+
+
+class UploadAssetsResponse(BaseModel):
+    upload_id: UUID
+    assets: list[UploadAssetRead]

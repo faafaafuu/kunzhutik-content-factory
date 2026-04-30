@@ -1,11 +1,17 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.schemas.upload import UploadRead, UploadTimelineEvent
-from app.services.uploads import create_upload_with_file, get_upload_or_404, get_upload_timeline
+from app.schemas.upload import UploadAssetsResponse, UploadAssetRead, UploadRead, UploadTimelineEvent
+from app.services.uploads import (
+    create_upload_with_file,
+    get_upload_asset_bytes,
+    get_upload_assets,
+    get_upload_or_404,
+    get_upload_timeline,
+)
 
 router = APIRouter(prefix="/uploads", tags=["uploads"])
 
@@ -41,3 +47,23 @@ def get_timeline(upload_id: UUID, db: Session = Depends(get_db)) -> list[UploadT
         raise HTTPException(status_code=404, detail="Upload not found")
     return get_upload_timeline(db, upload_id)
 
+
+@router.get("/{upload_id}/assets", response_model=UploadAssetsResponse)
+def list_assets(upload_id: UUID, request: Request, db: Session = Depends(get_db)) -> UploadAssetsResponse:
+    get_upload_or_404(db, upload_id)
+    assets = []
+    for asset in get_upload_assets(db, upload_id):
+        assets.append(
+            UploadAssetRead(
+                **asset,
+                download_url=str(request.url_for("download_upload_asset", upload_id=upload_id, asset_id=asset["id"])),
+            )
+        )
+    return UploadAssetsResponse(upload_id=upload_id, assets=assets)
+
+
+@router.get("/{upload_id}/assets/{asset_id}/download", name="download_upload_asset")
+def download_asset(upload_id: UUID, asset_id: UUID, db: Session = Depends(get_db)) -> Response:
+    asset, content = get_upload_asset_bytes(db, upload_id, asset_id)
+    headers = {"Content-Disposition": f'inline; filename="{asset.file_name}"'}
+    return Response(content=content, media_type=asset.mime_type, headers=headers)

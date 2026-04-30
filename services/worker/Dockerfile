@@ -5,6 +5,10 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg espeak-ng fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY services/api/requirements.txt /app/requirements.txt
 COPY packages/shared /app/packages/shared
 RUN pip install --no-cache-dir -r /app/requirements.txt

@@ -27,11 +27,20 @@ class Settings(BaseSettings):
     telegram_bot_token: str | None = Field(default=None, alias="TELEGRAM_BOT_TOKEN")
     telegram_approval_chat_id: str | None = Field(default=None, alias="TELEGRAM_APPROVAL_CHAT_ID")
     telegram_approval_base_url: str | None = Field(default=None, alias="TELEGRAM_APPROVAL_BASE_URL")
+    telegram_open_access: bool = Field(default=False, alias="TELEGRAM_OPEN_ACCESS")
+    telegram_allowed_user_ids_raw: str = Field(default="", alias="TELEGRAM_ALLOWED_USER_IDS")
 
     default_project_slug: str = Field(default="kunzhutik-food", alias="DEFAULT_PROJECT_SLUG")
     default_project_name: str = Field(default="Kunzhutik Food Lab", alias="DEFAULT_PROJECT_NAME")
     default_character_name: str = Field(default="Кунжутик", alias="DEFAULT_CHARACTER_NAME")
 
+    @property
+    def telegram_allowed_user_ids(self) -> set[str]:
+        return {
+            item.strip()
+            for item in self.telegram_allowed_user_ids_raw.split(",")
+            if item.strip()
+        }
+
 
 settings = Settings()
-

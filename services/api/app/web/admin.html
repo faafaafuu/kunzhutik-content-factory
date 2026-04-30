@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kunzhutik Admin Orders</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <style>
+      .admin-shell { padding: 2rem 1.5rem 4rem; }
+      .admin-grid { display: grid; gap: 1rem; }
+      .order-card { background: rgba(255,248,239,.92); border:1px solid rgba(39,20,13,.08); border-radius: 28px; padding:1.25rem; box-shadow: var(--shadow); }
+      .order-head, .order-meta { display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+      .order-items { margin: 1rem 0; padding-left: 1rem; color: var(--muted); }
+      .status-actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+      .status-actions button { border:0; border-radius:14px; padding:.7rem .9rem; background: rgba(255,107,44,.12); color: var(--brand-deep); font-weight:700; cursor:pointer; }
+    </style>
+  </head>
+  <body>
+    <div class="admin-shell">
+      <div class="section-head">
+        <p class="eyebrow">Admin</p>
+        <h1 style="font-size:clamp(2rem,4vw,3.5rem);max-width:none">Заказы storefront</h1>
+        <p class="hero-text">Здесь можно показать текущие заказы, менять статус и держать операционку без отдельной панели.</p>
+      </div>
+      <div class="admin-grid" id="orders"></div>
+    </div>
+    <script src="/static/admin.js" defer></script>
+  </body>
+  </html>

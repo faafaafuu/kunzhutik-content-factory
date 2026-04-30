@@ -17,13 +17,49 @@ logging.basicConfig(level=settings.log_level)
 router = Router()
 
 
+def is_allowed_user(user_id: int) -> bool:
+    allowed_user_ids = settings.telegram_allowed_user_ids
+    if not allowed_user_ids:
+        return True
+    return str(user_id) in allowed_user_ids
+
+
+async def reject_if_forbidden(message: Message | None = None, callback: CallbackQuery | None = None) -> bool:
+    user_id = callback.from_user.id if callback else message.from_user.id
+    if is_allowed_user(user_id):
+        return False
+
+    text = "Доступ к approval-функциям бота ограничен allowlist."
+    if callback:
+        await callback.answer(text, show_alert=True)
+    if message:
+        await message.answer(text)
+    return True
+
+
 @router.message(CommandStart())
 async def start(message: Message) -> None:
-    await message.answer("Кунжутик approval bot активен.")
+    if await reject_if_forbidden(message=message):
+        return
+
+    mode = "открытый многопользовательский режим" if settings.telegram_open_access else "режим фиксированного approval-чата"
+    await message.answer(
+        "Кунжутик approval bot активен.\n"
+        f"Режим: {mode}.\n"
+        "Команды: /pending для списка ожидающих задач."
+    )
 
 
 @router.message(F.text == "/pending")
 async def pending(message: Message) -> None:
+    if await reject_if_forbidden(message=message):
+        return
+
+    if not settings.telegram_open_access and settings.telegram_approval_chat_id:
+        if str(message.chat.id) != settings.telegram_approval_chat_id:
+            await message.answer("Этот бот принимает approval только в настроенном чате.")
+            return
+
     db: Session = SessionLocal()
     try:
         tasks = (
@@ -50,12 +86,17 @@ async def pending(message: Message) -> None:
                 f"ApprovalTask {task.id}\nСтатус: {task.status.value}\nUpload: {task.upload_id}",
                 reply_markup=keyboard,
             )
+        if settings.telegram_open_access:
+            await message.answer("Открытый режим включён: решения из этого чата доступны всем пользователям бота.")
     finally:
         db.close()
 
 
 @router.callback_query(F.data.startswith(("approve:", "reject:", "regenerate:")))
 async def decision_callback(callback: CallbackQuery) -> None:
+    if await reject_if_forbidden(callback=callback):
+        return
+
     action, approval_task_id = callback.data.split(":", maxsplit=1)
     decision_map = {
         "approve": "approved",
@@ -72,7 +113,7 @@ async def decision_callback(callback: CallbackQuery) -> None:
             db=db,
             task=task,
             decision=decision_map[action],
-            actor=str(callback.from_user.id),
+            actor=_format_actor(callback),
             note="Telegram callback",
             via=ApprovalTrigger.telegram,
         )
@@ -90,6 +131,12 @@ async def main() -> None:
     dp = Dispatcher()
     dp.include_router(router)
     await dp.start_polling(bot)
+
+
+def _format_actor(callback: CallbackQuery) -> str:
+    user = callback.from_user
+    username = f"@{user.username}" if user.username else "no-username"
+    return f"telegram:{user.id}:{username}"
 
 
 if __name__ == "__main__":

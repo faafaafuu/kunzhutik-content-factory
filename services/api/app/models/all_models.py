@@ -7,6 +7,7 @@ from app.models.media_asset import MediaAsset
 from app.models.project import Project
 from app.models.publication_result import PublicationResult
 from app.models.publication_task import PublicationTask
+from app.models.store_order import StoreOrder
 from app.models.upload import Upload
 from app.models.video_asset import VideoAsset
 from app.models.voice_asset import VoiceAsset
@@ -21,8 +22,8 @@ __all__ = [
     "Project",
     "PublicationResult",
     "PublicationTask",
+    "StoreOrder",
     "Upload",
     "VideoAsset",
     "VoiceAsset",
 ]
-

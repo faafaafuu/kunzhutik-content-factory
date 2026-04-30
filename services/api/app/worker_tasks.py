@@ -18,6 +18,7 @@ from app.models.character_profile import CharacterProfile
 from app.models.content_draft import ContentDraft
 from app.models.upload import Upload
 from app.services.audit import log_event
+from app.services.media_generation import generate_media_assets_for_drafts
 from shared.enums import ApprovalStatus, ContentPlatform, DraftKind, PipelineStatus
 
 logger = get_task_logger(__name__)
@@ -142,11 +143,22 @@ def process_upload_pipeline(upload_id: str) -> None:
             {"draft_count": len(drafts)},
         )
 
+        generate_media_assets_for_drafts(db, upload, drafts)
+        log_event(
+            db,
+            upload.project_id,
+            "upload",
+            str(upload.id),
+            "creative_render.completed",
+            "worker",
+            {"draft_count": len(drafts)},
+        )
+
         approval = ApprovalTask(
             project_id=upload.project_id,
             upload_id=upload.id,
             status=ApprovalStatus.pending,
-            telegram_chat_id=settings.telegram_approval_chat_id,
+            telegram_chat_id=None if settings.telegram_open_access else settings.telegram_approval_chat_id,
             preview_payload={
                 "dish_name": analysis.dish_name,
                 "drafts": [
@@ -155,10 +167,12 @@ def process_upload_pipeline(upload_id: str) -> None:
                         "kind": draft.kind.value,
                         "caption": draft.caption,
                         "cta": draft.cta,
+                        "script_text": draft.script_text,
                     }
                     for draft in drafts
                 ],
                 "mock": True,
+                "video_template": "mascot_story_v1",
             },
         )
         db.add(approval)
@@ -175,7 +189,7 @@ def process_upload_pipeline(upload_id: str) -> None:
         )
         db.commit()
 
-        if settings.telegram_bot_token and settings.telegram_approval_chat_id:
+        if settings.telegram_bot_token and settings.telegram_approval_chat_id and not settings.telegram_open_access:
             dispatch_approval_preview.delay(str(approval.id))
     except Exception:
         db.rollback()
@@ -195,6 +209,9 @@ def dispatch_approval_preview(approval_task_id: str) -> None:
         approval = db.query(ApprovalTask).filter(ApprovalTask.id == UUID(approval_task_id)).first()
         if not approval:
             raise ValueError(f"ApprovalTask {approval_task_id} not found")
+        if settings.telegram_open_access and not approval.telegram_chat_id:
+            logger.info("Telegram open access is enabled; skipping direct dispatch for %s", approval_task_id)
+            return
         if not settings.telegram_bot_token or not approval.telegram_chat_id:
             logger.info("Telegram is not configured; skipping approval dispatch for %s", approval_task_id)
             return

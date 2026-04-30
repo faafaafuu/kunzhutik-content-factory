@@ -3,7 +3,7 @@ uvicorn[standard]==0.34.2
 sqlalchemy==2.0.40
 psycopg[binary]==3.2.6
 alembic==1.15.2
-pydantic==2.11.3
+pydantic==2.10.6
 pydantic-settings==2.8.1
 python-multipart==0.0.20
 boto3==1.37.38
@@ -13,4 +13,3 @@ aiogram==3.19.0
 httpx==0.28.1
 orjson==3.10.16
 -e ./packages/shared
-

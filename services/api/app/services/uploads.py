@@ -4,17 +4,21 @@ import mimetypes
 from pathlib import Path
 from uuid import UUID, uuid4
 
+from sqlalchemy import select
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.models.content_draft import ContentDraft
 from app.models.project import Project
 from app.models.media_asset import MediaAsset
 from app.models.upload import Upload
+from app.models.video_asset import VideoAsset
+from app.models.voice_asset import VoiceAsset
 from app.schemas.upload import UploadTimelineEvent
 from app.services.audit import log_event
-from app.services.storage import upload_bytes
+from app.services.storage import download_bytes, upload_bytes
 from shared.enums import AssetKind, PipelineStatus
 
 
@@ -96,3 +100,88 @@ def get_upload_timeline(db: Session, upload_id: UUID) -> list[UploadTimelineEven
         .all()
     )
     return [UploadTimelineEvent(**row) for row in rows]
+
+
+def get_upload_assets(db: Session, upload_id: UUID) -> list[dict]:
+    draft_rows = db.execute(
+        select(ContentDraft.id, ContentDraft.kind, ContentDraft.platform).where(ContentDraft.upload_id == upload_id)
+    ).all()
+    draft_map = {
+        draft_id: {"draft_kind": kind.value, "platform": platform.value}
+        for draft_id, kind, platform in draft_rows
+    }
+
+    voice_map: dict[UUID, dict] = {}
+    for asset_id, voice_asset_id, content_draft_id in db.execute(
+        select(VoiceAsset.asset_id, VoiceAsset.id, VoiceAsset.content_draft_id)
+        .join(ContentDraft, VoiceAsset.content_draft_id == ContentDraft.id)
+        .where(ContentDraft.upload_id == upload_id, VoiceAsset.asset_id.is_not(None))
+    ):
+        voice_map[asset_id] = {
+            "voice_asset_id": voice_asset_id,
+            "content_draft_id": content_draft_id,
+            **draft_map.get(content_draft_id, {}),
+        }
+
+    video_map: dict[UUID, dict] = {}
+    preview_map: dict[UUID, dict] = {}
+    for asset_id, preview_asset_id, video_asset_id, content_draft_id in db.execute(
+        select(VideoAsset.asset_id, VideoAsset.preview_asset_id, VideoAsset.id, VideoAsset.content_draft_id)
+        .join(ContentDraft, VideoAsset.content_draft_id == ContentDraft.id)
+        .where(ContentDraft.upload_id == upload_id)
+    ):
+        base = {
+            "video_asset_id": video_asset_id,
+            "content_draft_id": content_draft_id,
+            **draft_map.get(content_draft_id, {}),
+        }
+        if asset_id:
+            video_map[asset_id] = base
+        if preview_asset_id:
+            preview_map[preview_asset_id] = base
+
+    assets = (
+        db.query(MediaAsset)
+        .filter(MediaAsset.upload_id == upload_id)
+        .order_by(MediaAsset.created_at.asc())
+        .all()
+    )
+
+    result: list[dict] = []
+    for asset in assets:
+        relation = {}
+        if asset.kind == AssetKind.voice:
+            relation = voice_map.get(asset.id, {})
+        elif asset.kind in {AssetKind.video, AssetKind.preview}:
+            relation = (video_map if asset.kind == AssetKind.video else preview_map).get(asset.id, {})
+
+        result.append(
+            {
+                "id": asset.id,
+                "kind": asset.kind.value,
+                "mime_type": asset.mime_type,
+                "file_name": asset.file_name,
+                "file_size": asset.file_size,
+                "width": asset.width,
+                "height": asset.height,
+                "duration_seconds": float(asset.duration_seconds) if asset.duration_seconds is not None else None,
+                "storage_key": asset.storage_key,
+                "content_draft_id": relation.get("content_draft_id"),
+                "draft_kind": relation.get("draft_kind"),
+                "platform": relation.get("platform"),
+                "voice_asset_id": relation.get("voice_asset_id"),
+                "video_asset_id": relation.get("video_asset_id"),
+            }
+        )
+    return result
+
+
+def get_upload_asset_bytes(db: Session, upload_id: UUID, asset_id: UUID) -> tuple[MediaAsset, bytes]:
+    asset = (
+        db.query(MediaAsset)
+        .filter(MediaAsset.id == asset_id, MediaAsset.upload_id == upload_id)
+        .first()
+    )
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    return asset, download_bytes(asset.storage_key)

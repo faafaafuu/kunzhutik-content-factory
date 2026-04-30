@@ -2,6 +2,7 @@
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 
 revision = "20260423_0001"
@@ -10,7 +11,7 @@ branch_labels = None
 depends_on = None
 
 
-pipeline_status = sa.Enum(
+pipeline_status = postgresql.ENUM(
     "pending",
     "queued",
     "processing",
@@ -18,20 +19,22 @@ pipeline_status = sa.Enum(
     "failed",
     "needs_review",
     name="pipeline_status",
+    create_type=False,
 )
-content_platform = sa.Enum("instagram", "vk", "yandex_maps", name="content_platform")
-draft_kind = sa.Enum("post", "story", "reel", "clip", "news", name="draft_kind")
-asset_kind = sa.Enum("source_photo", "derived_image", "voice", "video", "preview", name="asset_kind")
-approval_status = sa.Enum(
+content_platform = postgresql.ENUM("instagram", "vk", "yandex_maps", name="content_platform", create_type=False)
+draft_kind = postgresql.ENUM("post", "story", "reel", "clip", "news", name="draft_kind", create_type=False)
+asset_kind = postgresql.ENUM("source_photo", "derived_image", "voice", "video", "preview", name="asset_kind", create_type=False)
+approval_status = postgresql.ENUM(
     "pending",
     "dispatched",
     "approved",
     "rejected",
     "regenerate_requested",
     name="approval_status",
+    create_type=False,
 )
-approval_trigger = sa.Enum("telegram", "dashboard", "system", name="approval_trigger")
-publication_status = sa.Enum(
+approval_trigger = postgresql.ENUM("telegram", "dashboard", "system", name="approval_trigger", create_type=False)
+publication_status = postgresql.ENUM(
     "pending",
     "scheduled",
     "publishing",
@@ -39,6 +42,7 @@ publication_status = sa.Enum(
     "failed",
     "cancelled",
     name="publication_status",
+    create_type=False,
 )
 
 
@@ -273,4 +277,3 @@ def downgrade() -> None:
     draft_kind.drop(bind, checkfirst=True)
     content_platform.drop(bind, checkfirst=True)
     pipeline_status.drop(bind, checkfirst=True)
-

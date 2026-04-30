@@ -30,3 +30,13 @@ def upload_bytes(key: str, content: bytes, mime_type: str) -> str:
     )
     return key
 
+
+def download_bytes(key: str) -> bytes:
+    client = get_s3_client()
+    response = client.get_object(Bucket=settings.s3_bucket, Key=key)
+    return response["Body"].read()
+
+
+def get_public_asset_url(key: str) -> str:
+    base = settings.app_base_url.rstrip("/")
+    return f"{base}/api/v1/storage/{key}"

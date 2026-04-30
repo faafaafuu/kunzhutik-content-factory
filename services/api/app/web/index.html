@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kunzhutik Food Lab</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="site-frame">
+      <header class="topbar">
+        <a class="brand" href="#hero">
+          <span class="brand-mark">K</span>
+          <span class="brand-copy">
+            <strong>Kunzhutik Food Lab</strong>
+            <span>storefront, shorts, delivery</span>
+          </span>
+        </a>
+        <nav class="topnav" id="topnav"></nav>
+        <button class="cart-pill" id="cart-pill" type="button">Корзина <span id="cart-count">0</span></button>
+      </header>
+
+      <main class="page">
+        <section class="hero" id="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">Modern Food Storefront</p>
+            <h1>Еда, короткие ролики и заказ в одном спокойном интерфейсе.</h1>
+            <p class="hero-text">
+              Мы убрали визуальный шум и сделали более чистую витрину: понятный каталог, встроенные demo videos, компактная корзина и короткий путь
+              до заказа. Без ощущения “сырого конструктора”.
+            </p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="#menu">Открыть меню</a>
+              <a class="button button-secondary" href="#demo">Смотреть demo</a>
+            </div>
+            <div class="hero-stats" id="features"></div>
+          </div>
+          <div class="hero-stage">
+            <div class="hero-panel hero-panel-dark">
+              <p class="eyebrow eyebrow-invert">Today’s Drop</p>
+              <h2>Короткие ролики уже собираются вместе с карточками продуктов.</h2>
+              <p>Story, post и local news живут внутри одной системы, а не отдельным хаотичным набором файлов.</p>
+            </div>
+            <div class="hero-panel hero-panel-soft" id="promos"></div>
+          </div>
+        </section>
+
+        <section class="demo-section" id="demo">
+          <div class="section-head section-head-wide">
+            <div>
+              <p class="eyebrow">Demo Videos</p>
+              <h2>Живые превью роликов прямо на главной.</h2>
+            </div>
+            <p class="section-note">
+              Здесь встроены последние render assets пайплайна. Можно открыть плеер, посмотреть кадр и сразу понять, как выглядит social-output.
+            </p>
+          </div>
+          <div class="demo-grid" id="demo-grid"></div>
+        </section>
+
+        <section class="menu-section" id="menu">
+          <div class="section-head section-head-wide">
+            <div>
+              <p class="eyebrow">Menu</p>
+              <h2>Каталог в спокойной сетке, без перегруженной доставки из нулевых.</h2>
+            </div>
+            <p class="section-note">Быстрые категории, чистые карточки и акцент только на том, что реально помогает выбрать и заказать.</p>
+          </div>
+          <div class="category-tabs" id="category-tabs"></div>
+          <div class="menu-sections" id="menu-grid"></div>
+        </section>
+
+        <section class="info-section" id="delivery">
+          <div class="section-head section-head-wide">
+            <div>
+              <p class="eyebrow">Delivery</p>
+              <h2>Подача сервиса как у нормального digital-бренда, а не как у тестового стенда.</h2>
+            </div>
+          </div>
+          <div class="info-grid">
+            <article class="info-card">
+              <span>01</span>
+              <h3>Короткий путь до заказа</h3>
+              <p>Каталог, корзина и checkout живут на одной странице. Решение принимается быстро, без перекидывания по разделам.</p>
+            </article>
+            <article class="info-card">
+              <span>02</span>
+              <h3>Контент рядом с продуктом</h3>
+              <p>Ролики с маскотом не теряются в админках: они уже встроены в storefront и могут показывать товар в контексте.</p>
+            </article>
+            <article class="info-card">
+              <span>03</span>
+              <h3>Операционка на сервере</h3>
+              <p>Заказы сохраняются в Postgres, статусы меняются в админке, уведомления летят в Telegram без дополнительной сборки фронтенда.</p>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <aside class="cart-drawer" id="cart-drawer" aria-hidden="true">
+        <div class="cart-header">
+          <div>
+            <p class="eyebrow">Checkout</p>
+            <h2>Оформить заказ</h2>
+          </div>
+          <button class="icon-button" id="cart-close" type="button">×</button>
+        </div>
+        <div class="cart-items" id="cart-items"></div>
+        <div class="cart-summary">
+          <div class="summary-row">
+            <span>Итого</span>
+            <strong id="cart-total">0 ₽</strong>
+          </div>
+          <form class="checkout-form" id="checkout-form">
+            <input name="customer_name" placeholder="Имя" required />
+            <input name="customer_phone" placeholder="Телефон" required />
+            <input name="delivery_address" placeholder="Адрес доставки" required />
+            <input name="delivery_slot" placeholder="Когда привезти" />
+            <select name="payment_method">
+              <option value="card_on_delivery">Картой при получении</option>
+              <option value="cash">Наличными</option>
+              <option value="online">Онлайн</option>
+            </select>
+            <textarea name="comment" placeholder="Комментарий к заказу"></textarea>
+            <button class="button button-primary button-block" type="submit">Подтвердить</button>
+            <p class="form-note" id="checkout-status">После отправки заказ сразу появится в серверной админке.</p>
+          </form>
+        </div>
+      </aside>
+    </div>
+
+    <script src="/static/app.js" defer></script>
+  </body>
+  </html>
