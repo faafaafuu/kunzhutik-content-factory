@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#101816" />
+    <meta name="theme-color" content="#f6c53f" />
     <title>Кунжут</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800;900&family=Unbounded:wght@700;800;900&display=swap" rel="stylesheet" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="/static/styles.css?v=20260430-storefront-v3" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260430-storefront-v4" />
   </head>
   <body>
     <div class="site-shell">
@@ -32,10 +32,15 @@
         <section class="hero">
           <div class="hero-copy">
             <p class="eyebrow">Солнечногорск · турецкая кухня</p>
-            <h1>Турецкий стритфуд, собранный быстро и аккуратно.</h1>
+            <h1>Донер, пилав и кофе без долгих ожиданий.</h1>
             <p class="hero-text">
-              Выберите категорию, добавьте позиции в корзину и оформите заказ на финальном шаге. Заказ сразу уйдет оператору в Telegram.
+              Яркое меню, понятная корзина и быстрый заказ оператору. Выберите раздел, соберите набор и подтвердите контакты только в конце.
             </p>
+            <div class="hero-stats" aria-label="Коротко о заказе">
+              <span><strong>45+</strong> позиций</span>
+              <span><strong>12</strong> разделов</span>
+              <span><strong>TG</strong> заказ</span>
+            </div>
             <div class="hero-tags" id="hero-tags"></div>
             <div class="hero-actions">
               <a class="button button-primary" href="#menu">Выбрать блюда</a>
@@ -43,9 +48,10 @@
             </div>
           </div>
           <div class="hero-visual" aria-hidden="true">
+            <div class="hero-badge">hot menu</div>
             <div class="visual-card visual-main">
               <img src="/static/assets/menu/doner.svg" alt="" />
-              <span>Донер в хлебе</span>
+              <span>Донер</span>
             </div>
             <div class="visual-card visual-side">
               <img src="/static/assets/menu/coffee.svg" alt="" />
@@ -53,7 +59,7 @@
             </div>
             <div class="visual-card visual-mini">
               <img src="/static/assets/menu/baklava.svg" alt="" />
-              <span>Пахлава</span>
+              <span>Десерты</span>
             </div>
           </div>
         </section>
@@ -66,7 +72,7 @@
               <p class="eyebrow">Меню</p>
               <h2 id="active-category-title">Категории</h2>
             </div>
-            <p class="section-note">Переключайте разделы кнопками. На экране только выбранная категория.</p>
+            <p class="section-note">Разделы переключаются кнопками, чтобы меню не превращалось в длинную простыню.</p>
           </div>
           <div class="category-tabs" id="category-tabs" role="tablist" aria-label="Категории меню"></div>
           <div class="menu-group-grid" id="menu-grid"></div>
@@ -137,10 +143,10 @@
               <button class="auth-button" type="button" data-auth="phone" aria-label="Телефон">
                 <span class="auth-icon auth-phone">☎</span>
               </button>
-              <button class="auth-button" type="button" data-auth="vk" aria-label="VK">
+              <button class="auth-button" type="button" data-auth="vk" aria-label="VK" title="Нужно подключить VK OAuth на сервере">
                 <span class="auth-icon auth-vk">vk</span>
               </button>
-              <button class="auth-button" type="button" data-auth="google" aria-label="Google">
+              <button class="auth-button" type="button" data-auth="google" aria-label="Google" title="Нужно подключить Google OAuth на сервере">
                 <span class="auth-icon auth-google">G</span>
               </button>
             </div>
@@ -163,6 +169,6 @@
       </aside>
     </div>
 
-    <script src="/static/app.js?v=20260430-storefront-v3" defer></script>
+    <script src="/static/app.js?v=20260430-storefront-v4" defer></script>
   </body>
 </html>

@@ -74,6 +74,7 @@ function bindEvents() {
 
 function setupTelegramTheme() {
   if (!window.Telegram?.WebApp) {
+    prefillTelegramUser({ silent: true });
     return;
   }
   window.Telegram.WebApp.ready();
@@ -282,8 +283,8 @@ function applyQuickAuth(provider) {
   if (provider === "telegram") {
     const didPrefill = prefillTelegramUser();
     const text = didPrefill
-      ? "Telegram-данные подставлены в заказ."
-      : "Telegram не передал данные. Откройте сайт кнопкой из бота.";
+      ? "Telegram-профиль подставлен в заказ."
+      : "Telegram не передал профиль. Откройте сайт кнопкой из бота /menu или /start.";
     els.authStatus.textContent = text;
     els.checkoutStatus.textContent = text;
     return;
@@ -294,25 +295,26 @@ function applyQuickAuth(provider) {
     els.checkoutStatus.textContent = "Введите телефон, оператор свяжется для подтверждения.";
     return;
   }
-  els.authStatus.textContent = `${provider.toUpperCase()} требует серверную OAuth-интеграцию. Сейчас доступен Telegram WebApp-профиль.`;
+  els.authStatus.textContent = `${provider.toUpperCase()} пока не подключен: нужны OAuth-ключи и callback на сервере. Сейчас работает Telegram из бота.`;
   els.checkoutStatus.textContent = els.authStatus.textContent;
 }
 
 function prefillTelegramUser(options = {}) {
-  const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
-  if (!user) {
+  const profile = getTelegramProfile();
+  if (!profile) {
     if (!options.silent && els.authStatus) {
-      els.authStatus.textContent = "Telegram-данные недоступны в обычном браузере.";
+      els.authStatus.textContent = "Telegram-профиль недоступен в обычном браузере. Откройте сайт из бота.";
     }
     return false;
   }
-  const name = [user.first_name, user.last_name].filter(Boolean).join(" ");
+  const name = [profile.first_name, profile.last_name].filter(Boolean).join(" ");
   if (name && !els.checkoutForm.customer_name.value) {
     els.checkoutForm.customer_name.value = name;
   }
   if (els.authStatus) {
-    const username = user.username ? `@${user.username}` : `id ${user.id}`;
-    els.authStatus.textContent = `Подтянут Telegram-профиль: ${username}.`;
+    const username = profile.username ? `@${profile.username}` : `id ${profile.id}`;
+    const verified = profile.provider === "telegram_link" ? " Подпись бота будет проверена при заказе." : "";
+    els.authStatus.textContent = `Подтянут Telegram-профиль: ${username}.${verified}`;
   }
   return true;
 }
@@ -365,6 +367,14 @@ async function submitOrder(event) {
 }
 
 function getCustomerProfile() {
+  return getTelegramProfile();
+}
+
+function getTelegramProfile() {
+  return getTelegramWebAppProfile() || getTelegramLinkProfile();
+}
+
+function getTelegramWebAppProfile() {
   const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
   if (!user) {
     return null;
@@ -376,6 +386,23 @@ function getCustomerProfile() {
     first_name: user.first_name || null,
     last_name: user.last_name || null,
     language_code: user.language_code || null,
+  };
+}
+
+function getTelegramLinkProfile() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("tg_id");
+  const signature = params.get("tg_sig");
+  if (!id || !signature) {
+    return null;
+  }
+  return {
+    provider: "telegram_link",
+    id,
+    username: params.get("tg_username") || null,
+    first_name: params.get("tg_first_name") || null,
+    last_name: params.get("tg_last_name") || null,
+    signature,
   };
 }
 

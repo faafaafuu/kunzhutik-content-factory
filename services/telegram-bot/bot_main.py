@@ -1,5 +1,8 @@
 import asyncio
+import hashlib
+import hmac
 import logging
+from urllib.parse import urlencode
 from uuid import UUID
 
 from aiogram import Bot, Dispatcher, F, Router
@@ -22,8 +25,10 @@ def storefront_url() -> str:
     return (settings.telegram_approval_base_url or settings.app_base_url).rstrip("/")
 
 
-def storefront_keyboard() -> InlineKeyboardMarkup:
+def storefront_keyboard(user=None) -> InlineKeyboardMarkup:
     url = storefront_url()
+    if user:
+        url = _with_signed_telegram_profile(url, user)
     if url.startswith("https://"):
         button = InlineKeyboardButton(text="Открыть заказ", web_app=WebAppInfo(url=url))
     else:
@@ -62,7 +67,7 @@ async def start(message: Message) -> None:
         f"Режим: {mode}.\n"
         "Команды: /menu, /contacts, /pending.\n"
         "Нажмите кнопку ниже, чтобы открыть меню и оформить заказ.",
-        reply_markup=storefront_keyboard(),
+        reply_markup=storefront_keyboard(message.from_user),
     )
 
 
@@ -99,7 +104,33 @@ async def menu(message: Message) -> None:
             lines.append(f"- {item['title']} — {item['price']} ₽, {item['weight']}")
     lines.append("")
     lines.append("Полное меню доступно на сайте.")
-    await message.answer("\n".join(lines), reply_markup=storefront_keyboard())
+    await message.answer("\n".join(lines), reply_markup=storefront_keyboard(message.from_user))
+
+
+def _with_signed_telegram_profile(url: str, user) -> str:
+    if not settings.telegram_bot_token:
+        return url
+    payload = {
+        "tg_id": str(user.id),
+        "tg_username": user.username or "",
+        "tg_first_name": user.first_name or "",
+        "tg_last_name": user.last_name or "",
+    }
+    payload["tg_sig"] = _sign_telegram_profile(payload)
+    separator = "&" if "?" in url else "?"
+    return f"{url}{separator}{urlencode(payload)}"
+
+
+def _sign_telegram_profile(payload: dict[str, str]) -> str:
+    message = "\n".join(
+        [
+            payload.get("tg_id", ""),
+            payload.get("tg_username", ""),
+            payload.get("tg_first_name", ""),
+            payload.get("tg_last_name", ""),
+        ]
+    )
+    return hmac.new(settings.telegram_bot_token.encode(), message.encode(), hashlib.sha256).hexdigest()
 
 
 @router.message(F.text == "/pending")

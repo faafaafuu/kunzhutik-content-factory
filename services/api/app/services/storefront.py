@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
 from decimal import Decimal
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.store_order import StoreOrder
 from app.services.notifications import notify_new_order
 from app.store.catalog import BUSINESS_PROFILE, CATEGORIES, FEATURES, MENU_ITEMS, PROMOS, STORE_CURRENCY
@@ -119,12 +122,43 @@ def build_order_notification_summary(order: StoreOrder) -> str:
 def _sanitize_customer_profile(customer_profile: dict | None) -> dict:
     if not customer_profile:
         return {}
-    allowed_keys = {"provider", "id", "username", "first_name", "last_name", "language_code"}
-    return {
+    allowed_keys = {
+        "provider",
+        "id",
+        "username",
+        "first_name",
+        "last_name",
+        "language_code",
+        "signature",
+    }
+    sanitized = {
         key: str(value)[:160]
         for key, value in customer_profile.items()
         if key in allowed_keys and value is not None
     }
+    if sanitized.get("provider") == "telegram_link":
+        verified = _verify_telegram_link_profile(sanitized)
+        if not verified:
+            return {"provider": "telegram_link", "verified": "false"}
+        sanitized["verified"] = "true"
+    sanitized.pop("signature", None)
+    return sanitized
+
+
+def _verify_telegram_link_profile(customer_profile: dict) -> bool:
+    signature = customer_profile.get("signature")
+    if not signature or not settings.telegram_bot_token:
+        return False
+    message = "\n".join(
+        [
+            customer_profile.get("id", ""),
+            customer_profile.get("username", ""),
+            customer_profile.get("first_name", ""),
+            customer_profile.get("last_name", ""),
+        ]
+    )
+    expected = hmac.new(settings.telegram_bot_token.encode(), message.encode(), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(signature, expected)
 
 
 def _format_customer_profile(customer_profile: dict | None) -> str:
@@ -133,9 +167,12 @@ def _format_customer_profile(customer_profile: dict | None) -> str:
     provider = customer_profile.get("provider")
     username = customer_profile.get("username")
     profile_id = customer_profile.get("id")
+    verified = customer_profile.get("verified")
     parts = [str(provider)] if provider else []
     if username:
         parts.append(f"@{username}")
     if profile_id:
         parts.append(f"id:{profile_id}")
+    if verified:
+        parts.append("verified" if verified == "true" else "unverified")
     return f"Профиль: {' '.join(parts)}\n" if parts else ""
