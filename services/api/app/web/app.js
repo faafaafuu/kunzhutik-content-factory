@@ -156,7 +156,9 @@ function renderMenu() {
 function renderItemCard(item) {
   return `
     <article class="menu-card" style="--card-accent:${item.accent}">
-      <div class="menu-art"></div>
+      <div class="menu-art">
+        ${item.image_url ? `<img src="${item.image_url}" alt="${item.title}" loading="lazy" />` : ""}
+      </div>
       <div class="menu-meta">
         <span class="tag">${item.tag}</span>
         ${item.badge ? `<span class="menu-badge">${item.badge}</span>` : ""}
@@ -288,6 +290,12 @@ async function submitOrder(event) {
   els.checkoutForm.reset();
   renderCart();
   els.checkoutStatus.textContent = `Заказ ${result.order_number} сохранён.`;
+
+  if (window.Telegram?.WebApp) {
+    window.Telegram.WebApp.HapticFeedback?.notificationOccurred("success");
+    window.Telegram.WebApp.MainButton.setText(`Заказ ${result.order_number} принят`);
+    window.Telegram.WebApp.MainButton.show();
+  }
 }
 
 function formatPrice(price) {

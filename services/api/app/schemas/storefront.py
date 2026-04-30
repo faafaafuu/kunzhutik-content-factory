@@ -15,6 +15,7 @@ class StoreMenuItemRead(BaseModel):
     weight: str
     badge: str | None = None
     accent: str
+    image_url: str | None = None
 
 
 class StoreMenuResponse(BaseModel):

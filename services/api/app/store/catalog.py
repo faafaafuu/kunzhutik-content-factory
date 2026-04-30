@@ -1,5 +1,19 @@
 STORE_CURRENCY = "RUB"
 
+MENU_IMAGE_BY_CATEGORY = {
+    "doners": "/static/assets/menu/doner.svg",
+    "combos": "/static/assets/menu/combo.svg",
+    "sides": "/static/assets/menu/fries.svg",
+    "coffee": "/static/assets/menu/coffee.svg",
+    "desserts": "/static/assets/menu/dessert.svg",
+    "cold_drinks": "/static/assets/menu/drink.svg",
+    "middle_east": "/static/assets/menu/baklava.svg",
+    "seasonal": "/static/assets/menu/seasonal.svg",
+    "bubble": "/static/assets/menu/bubble.svg",
+    "soups": "/static/assets/menu/soup.svg",
+    "salads": "/static/assets/menu/salad.svg",
+}
+
 BUSINESS_PROFILE = {
     "brand_name": "Кунжут",
     "address": "ул. Дзержинского, 18",
@@ -156,3 +170,6 @@ PROMOS = [
     {"title": "Комбо Кунжут", "text": "Донер и картофель фри в одном сытном наборе."},
     {"title": "Восточные сладости", "text": "Пахлава, рахат ассорти и фирменные десерты к кофе."},
 ]
+
+for item in MENU_ITEMS:
+    item["image_url"] = MENU_IMAGE_BY_CATEGORY.get(item["category_id"])

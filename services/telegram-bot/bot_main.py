@@ -4,7 +4,7 @@ from uuid import UUID
 
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.filters import CommandStart
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -16,6 +16,19 @@ from shared.enums import ApprovalStatus, ApprovalTrigger
 
 logging.basicConfig(level=settings.log_level)
 router = Router()
+
+
+def storefront_url() -> str:
+    return (settings.telegram_approval_base_url or settings.app_base_url).rstrip("/")
+
+
+def storefront_keyboard() -> InlineKeyboardMarkup:
+    url = storefront_url()
+    if url.startswith("https://"):
+        button = InlineKeyboardButton(text="Открыть заказ", web_app=WebAppInfo(url=url))
+    else:
+        button = InlineKeyboardButton(text="Открыть сайт", url=url)
+    return InlineKeyboardMarkup(inline_keyboard=[[button]])
 
 
 def is_allowed_user(user_id: int) -> bool:
@@ -47,7 +60,9 @@ async def start(message: Message) -> None:
     await message.answer(
         f"{BUSINESS_PROFILE['brand_name']} bot активен.\n"
         f"Режим: {mode}.\n"
-        "Команды: /menu, /contacts, /pending."
+        "Команды: /menu, /contacts, /pending.\n"
+        "Нажмите кнопку ниже, чтобы открыть меню и оформить заказ.",
+        reply_markup=storefront_keyboard(),
     )
 
 
@@ -84,7 +99,7 @@ async def menu(message: Message) -> None:
             lines.append(f"- {item['title']} — {item['price']} ₽, {item['weight']}")
     lines.append("")
     lines.append("Полное меню доступно на сайте.")
-    await message.answer("\n".join(lines))
+    await message.answer("\n".join(lines), reply_markup=storefront_keyboard())
 
 
 @router.message(F.text == "/pending")
