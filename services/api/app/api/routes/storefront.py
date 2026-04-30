@@ -46,6 +46,7 @@ def create_order(payload: StoreOrderCreateRequest, db: Session = Depends(get_db)
         delivery_slot=payload.delivery_slot,
         payment_method=payload.payment_method,
         comment=payload.comment,
+        customer_profile=payload.customer_profile,
         items=[item.model_dump() for item in payload.items],
     )
     return StoreOrderCreateResponse(order=StoreOrderRead.model_validate(order), order_number=order_number)

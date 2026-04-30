@@ -40,6 +40,7 @@ class StoreOrderCreateRequest(BaseModel):
     delivery_slot: str | None = Field(default=None, max_length=120)
     payment_method: str = Field(default="card_on_delivery", pattern="^(cash|card_on_delivery|online)$")
     comment: str | None = Field(default=None, max_length=500)
+    customer_profile: dict | None = None
     items: list[StoreOrderItemRequest] = Field(min_length=1)
 
 

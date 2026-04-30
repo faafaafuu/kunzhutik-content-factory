@@ -140,11 +140,13 @@ a {
 }
 
 .cart-button {
+  position: relative;
+  width: 48px;
+  height: 48px;
   min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 14px;
+  display: grid;
+  place-items: center;
+  padding: 0;
   border-radius: 999px;
   background: #fff;
   color: var(--ink);
@@ -152,6 +154,9 @@ a {
 }
 
 .cart-button strong {
+  position: absolute;
+  top: -4px;
+  right: -4px;
   min-width: 25px;
   height: 25px;
   display: grid;
@@ -160,6 +165,31 @@ a {
   background: var(--brand);
   color: #fff;
   font-size: 0.82rem;
+}
+
+.cart-icon {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink);
+  border-top: 0;
+  border-radius: 0 0 9px 9px;
+  font-size: 0;
+}
+
+.cart-icon::before {
+  content: "";
+  position: absolute;
+}
+
+.cart-icon::before {
+  width: 14px;
+  height: 10px;
+  top: 10px;
+  border: 2px solid var(--ink);
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
 }
 
 .hero {
@@ -732,13 +762,50 @@ h3 {
   gap: 8px;
 }
 
-.auth-grid button {
+.auth-button {
   min-height: 38px;
+  display: grid;
+  place-items: center;
   border-radius: 999px;
   background: #fff;
   border: 1px solid var(--line);
   color: var(--ink);
   font-weight: 900;
+}
+
+.auth-icon {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.auth-telegram {
+  background: #2aabee;
+}
+
+.auth-phone {
+  background: var(--mint);
+}
+
+.auth-vk {
+  background: #0077ff;
+}
+
+.auth-google {
+  color: #1f1f1f;
+  background: conic-gradient(from -45deg, #4285f4, #34a853, #fbbc05, #ea4335, #4285f4);
+}
+
+.auth-status {
+  margin: 10px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  line-height: 1.45;
 }
 
 .checkout-form input,

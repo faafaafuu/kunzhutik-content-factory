@@ -33,6 +33,7 @@ def create_store_order(
     delivery_slot: str | None,
     payment_method: str,
     comment: str | None,
+    customer_profile: dict | None,
     items: list[dict],
 ) -> tuple[StoreOrder, str]:
     normalized_items: list[dict] = []
@@ -67,7 +68,10 @@ def create_store_order(
         currency=STORE_CURRENCY,
         total_amount=total_amount.quantize(Decimal("0.01")),
         items_json=normalized_items,
-        source_json={"channel": "web_storefront"},
+        source_json={
+            "channel": "web_storefront",
+            "customer_profile": _sanitize_customer_profile(customer_profile),
+        },
     )
     db.add(order)
     db.commit()
@@ -97,13 +101,41 @@ def update_store_order_status(db: Session, order_id, status: str) -> StoreOrder:
 
 def build_order_notification_summary(order: StoreOrder) -> str:
     item_lines = "\n".join(f"- {item['title']} × {item['quantity']}" for item in order.items_json)
+    customer_profile = order.source_json.get("customer_profile") if isinstance(order.source_json, dict) else None
+    profile_line = _format_customer_profile(customer_profile)
     return (
         f"Заведение: {BUSINESS_PROFILE['brand_name']}\n"
         f"Адрес: {BUSINESS_PROFILE['address']}\n"
         f"Клиент: {order.customer_name}\n"
         f"Телефон: {order.customer_phone}\n"
+        f"{profile_line}"
         f"Адрес доставки: {order.delivery_address}\n"
         f"Оплата: {order.payment_method}\n"
         f"Сумма: {order.total_amount} {order.currency}\n\n"
         f"{item_lines}"
     )
+
+
+def _sanitize_customer_profile(customer_profile: dict | None) -> dict:
+    if not customer_profile:
+        return {}
+    allowed_keys = {"provider", "id", "username", "first_name", "last_name", "language_code"}
+    return {
+        key: str(value)[:160]
+        for key, value in customer_profile.items()
+        if key in allowed_keys and value is not None
+    }
+
+
+def _format_customer_profile(customer_profile: dict | None) -> str:
+    if not customer_profile:
+        return ""
+    provider = customer_profile.get("provider")
+    username = customer_profile.get("username")
+    profile_id = customer_profile.get("id")
+    parts = [str(provider)] if provider else []
+    if username:
+        parts.append(f"@{username}")
+    if profile_id:
+        parts.append(f"id:{profile_id}")
+    return f"Профиль: {' '.join(parts)}\n" if parts else ""

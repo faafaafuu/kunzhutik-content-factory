@@ -22,8 +22,8 @@
           </span>
         </a>
         <nav class="topnav" id="topnav"></nav>
-        <button class="cart-button" id="cart-pill" type="button">
-          <span>Корзина</span>
+        <button class="cart-button" id="cart-pill" type="button" aria-label="Корзина">
+          <span class="cart-icon" aria-hidden="true">⌁</span>
           <strong id="cart-count">0</strong>
         </button>
       </header>
@@ -131,11 +131,20 @@
           <div class="auth-panel">
             <span>Быстрый вход</span>
             <div class="auth-grid">
-              <button type="button" data-auth="telegram">Telegram</button>
-              <button type="button" data-auth="phone">Телефон</button>
-              <button type="button" data-auth="vk">VK</button>
-              <button type="button" data-auth="google">Google</button>
+              <button class="auth-button" type="button" data-auth="telegram" aria-label="Telegram">
+                <span class="auth-icon auth-telegram">T</span>
+              </button>
+              <button class="auth-button" type="button" data-auth="phone" aria-label="Телефон">
+                <span class="auth-icon auth-phone">☎</span>
+              </button>
+              <button class="auth-button" type="button" data-auth="vk" aria-label="VK">
+                <span class="auth-icon auth-vk">vk</span>
+              </button>
+              <button class="auth-button" type="button" data-auth="google" aria-label="Google">
+                <span class="auth-icon auth-google">G</span>
+              </button>
             </div>
+            <p class="auth-status" id="auth-status">Откройте заказ из Telegram, чтобы подставить имя автоматически.</p>
           </div>
           <input name="customer_name" placeholder="Имя" required />
           <input name="customer_phone" placeholder="Телефон" required />

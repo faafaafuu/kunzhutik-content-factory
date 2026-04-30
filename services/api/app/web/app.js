@@ -33,6 +33,7 @@ const els = {
   checkoutBack: document.getElementById("checkout-back"),
   checkoutForm: document.getElementById("checkout-form"),
   checkoutStatus: document.getElementById("checkout-status"),
+  authStatus: document.getElementById("auth-status"),
   cartTitle: document.getElementById("cart-title"),
   stepCart: document.getElementById("step-cart"),
   stepCheckout: document.getElementById("step-checkout"),
@@ -77,6 +78,7 @@ function setupTelegramTheme() {
   }
   window.Telegram.WebApp.ready();
   window.Telegram.WebApp.expand();
+  prefillTelegramUser({ silent: true });
 }
 
 function renderTopnav() {
@@ -278,27 +280,41 @@ function showCheckout() {
 
 function applyQuickAuth(provider) {
   if (provider === "telegram") {
-    prefillTelegramUser();
-    els.checkoutStatus.textContent = "Данные Telegram подставлены, если они доступны.";
+    const didPrefill = prefillTelegramUser();
+    const text = didPrefill
+      ? "Telegram-данные подставлены в заказ."
+      : "Telegram не передал данные. Откройте сайт кнопкой из бота.";
+    els.authStatus.textContent = text;
+    els.checkoutStatus.textContent = text;
     return;
   }
   if (provider === "phone") {
     els.checkoutForm.customer_phone.focus();
+    els.authStatus.textContent = "Телефон Telegram/VK/Google не отдают автоматически. Введите номер вручную.";
     els.checkoutStatus.textContent = "Введите телефон, оператор свяжется для подтверждения.";
     return;
   }
-  els.checkoutStatus.textContent = `${provider.toUpperCase()}-вход подготовлен в интерфейсе. Серверную OAuth-интеграцию подключим отдельно.`;
+  els.authStatus.textContent = `${provider.toUpperCase()} требует серверную OAuth-интеграцию. Сейчас доступен Telegram WebApp-профиль.`;
+  els.checkoutStatus.textContent = els.authStatus.textContent;
 }
 
-function prefillTelegramUser() {
+function prefillTelegramUser(options = {}) {
   const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
   if (!user) {
-    return;
+    if (!options.silent && els.authStatus) {
+      els.authStatus.textContent = "Telegram-данные недоступны в обычном браузере.";
+    }
+    return false;
   }
   const name = [user.first_name, user.last_name].filter(Boolean).join(" ");
   if (name && !els.checkoutForm.customer_name.value) {
     els.checkoutForm.customer_name.value = name;
   }
+  if (els.authStatus) {
+    const username = user.username ? `@${user.username}` : `id ${user.id}`;
+    els.authStatus.textContent = `Подтянут Telegram-профиль: ${username}.`;
+  }
+  return true;
 }
 
 async function submitOrder(event) {
@@ -317,6 +333,7 @@ async function submitOrder(event) {
     delivery_slot: formData.get("delivery_slot"),
     payment_method: formData.get("payment_method"),
     comment: formData.get("comment"),
+    customer_profile: getCustomerProfile(),
     items,
   };
 
@@ -345,6 +362,21 @@ async function submitOrder(event) {
     window.Telegram.WebApp.MainButton.setText(`Заказ ${result.order_number} принят`);
     window.Telegram.WebApp.MainButton.show();
   }
+}
+
+function getCustomerProfile() {
+  const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
+  if (!user) {
+    return null;
+  }
+  return {
+    provider: "telegram",
+    id: user.id,
+    username: user.username || null,
+    first_name: user.first_name || null,
+    last_name: user.last_name || null,
+    language_code: user.language_code || null,
+  };
 }
 
 function getCartItems() {
