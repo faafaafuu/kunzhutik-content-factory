@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f7f1e8" />
+    <meta name="theme-color" content="#111513" />
     <title>Кунжут</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="/static/styles.css?v=20260430-storefront-v2" />
@@ -27,16 +27,31 @@
 
       <main>
         <section class="hero">
-          <div>
+          <div class="hero-copy">
             <p class="eyebrow">Солнечногорск · турецкая кухня</p>
             <h1>Донеры, кофе и восточные сладости без лишних шагов.</h1>
             <p class="hero-text">
               Выберите категорию, добавьте позиции в корзину и оформите заказ на финальном шаге. Заказ сразу уйдет оператору в Telegram.
             </p>
+            <div class="hero-tags" id="hero-tags"></div>
+            <div class="hero-actions">
+              <a class="button button-primary" href="#menu">Выбрать блюда</a>
+              <a class="button button-secondary" id="map-link" href="#" target="_blank" rel="noreferrer">Как добраться</a>
+            </div>
           </div>
-          <div class="hero-actions">
-            <a class="button button-primary" href="#menu">Выбрать блюда</a>
-            <a class="button button-secondary" id="map-link" href="#" target="_blank" rel="noreferrer">Как добраться</a>
+          <div class="hero-visual" aria-hidden="true">
+            <div class="visual-card visual-main">
+              <img src="/static/assets/menu/doner.svg" alt="" />
+              <span>Донер в хлебе</span>
+            </div>
+            <div class="visual-card visual-side">
+              <img src="/static/assets/menu/coffee.svg" alt="" />
+              <span>Кофе</span>
+            </div>
+            <div class="visual-card visual-mini">
+              <img src="/static/assets/menu/baklava.svg" alt="" />
+              <span>Пахлава</span>
+            </div>
           </div>
         </section>
 

@@ -7,6 +7,7 @@ const state = {
 const els = {
   topnav: document.getElementById("topnav"),
   features: document.getElementById("features"),
+  heroTags: document.getElementById("hero-tags"),
   brandName: document.getElementById("brand-name"),
   brandAddress: document.getElementById("brand-address"),
   mapLink: document.getElementById("map-link"),
@@ -50,6 +51,7 @@ async function bootstrap() {
   setupTelegramTheme();
   renderBusinessProfile();
   renderTopnav();
+  renderHeroTags();
   renderFeatures();
   renderCategories();
   renderMenu();
@@ -83,6 +85,16 @@ function renderTopnav() {
     { href: "#contacts", label: "Контакты" },
   ];
   els.topnav.innerHTML = links.map((link) => `<a href="${link.href}">${link.label}</a>`).join("");
+}
+
+function renderHeroTags() {
+  const business = state.menu.business || {};
+  const tags = [
+    business.hours || "ежедневно с 10:00 до 22:00",
+    business.phone || "+7 (916) 498-39-09",
+    "заказ в Telegram",
+  ];
+  els.heroTags.innerHTML = tags.map((tag) => `<span>${tag}</span>`).join("");
 }
 
 function renderBusinessProfile() {
