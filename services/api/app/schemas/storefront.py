@@ -19,6 +19,7 @@ class StoreMenuItemRead(BaseModel):
 
 class StoreMenuResponse(BaseModel):
     brand_name: str
+    business: dict
     currency: str
     categories: list[dict]
     features: list[dict]

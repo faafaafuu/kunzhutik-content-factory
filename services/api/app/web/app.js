@@ -10,6 +10,13 @@ const els = {
   topnav: document.getElementById("topnav"),
   features: document.getElementById("features"),
   promos: document.getElementById("promos"),
+  brandName: document.getElementById("brand-name"),
+  brandAddress: document.getElementById("brand-address"),
+  mapLink: document.getElementById("map-link"),
+  socialLinks: document.getElementById("social-links"),
+  contactAddress: document.getElementById("contact-address"),
+  contactMapLink: document.getElementById("contact-map-link"),
+  contactSocialLinks: document.getElementById("contact-social-links"),
   categoryTabs: document.getElementById("category-tabs"),
   menuGrid: document.getElementById("menu-grid"),
   demoGrid: document.getElementById("demo-grid"),
@@ -37,6 +44,7 @@ async function bootstrap() {
   state.menu = await menuResponse.json();
   state.demoAssets = demoResponse.ok ? await demoResponse.json() : { assets: [] };
 
+  renderBusinessProfile();
   renderTopnav();
   renderFeatures();
   renderPromos();
@@ -55,11 +63,34 @@ function bindEvents() {
 
 function renderTopnav() {
   const links = [
-    { href: "#demo", label: "Demo" },
+    { href: "#demo", label: "Видео" },
     { href: "#menu", label: "Меню" },
-    { href: "#delivery", label: "Сервис" },
+    { href: "#delivery", label: "Контакты" },
   ];
   els.topnav.innerHTML = links.map((link) => `<a href="${link.href}">${link.label}</a>`).join("");
+}
+
+function renderBusinessProfile() {
+  const business = state.menu.business || {};
+  const socialLinks = [
+    business.instagram_url ? { href: business.instagram_url, label: "Instagram" } : null,
+    business.vk_url ? { href: business.vk_url, label: "VK" } : null,
+  ].filter(Boolean);
+
+  els.brandName.textContent = state.menu.brand_name || business.brand_name || "Кунжут";
+  els.brandAddress.textContent = business.address || "ул. Дзержинского, 18";
+  els.contactAddress.textContent = business.address || "ул. Дзержинского, 18";
+
+  if (business.map_url) {
+    els.mapLink.href = business.map_url;
+    els.contactMapLink.href = business.map_url;
+  }
+
+  const socialHtml = socialLinks
+    .map((link) => `<a href="${link.href}" target="_blank" rel="noreferrer">${link.label}</a>`)
+    .join("");
+  els.socialLinks.innerHTML = socialHtml;
+  els.contactSocialLinks.innerHTML = socialHtml;
 }
 
 function renderFeatures() {

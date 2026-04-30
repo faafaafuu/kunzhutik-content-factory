@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kunzhutik Food Lab</title>
+    <title>Кунжут</title>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
@@ -12,8 +12,8 @@
         <a class="brand" href="#hero">
           <span class="brand-mark">K</span>
           <span class="brand-copy">
-            <strong>Kunzhutik Food Lab</strong>
-            <span>storefront, shorts, delivery</span>
+            <strong id="brand-name">Кунжут</strong>
+            <span id="brand-address">ул. Дзержинского, 18</span>
           </span>
         </a>
         <nav class="topnav" id="topnav"></nav>
@@ -23,23 +23,23 @@
       <main class="page">
         <section class="hero" id="hero">
           <div class="hero-copy">
-            <p class="eyebrow">Modern Food Storefront</p>
-            <h1>Еда, короткие ролики и заказ в одном спокойном интерфейсе.</h1>
+            <p class="eyebrow">Кунжут · ул. Дзержинского, 18</p>
+            <h1>Пицца, закуски и горячие хиты рядом с вами.</h1>
             <p class="hero-text">
-              Мы убрали визуальный шум и сделали более чистую витрину: понятный каталог, встроенные demo videos, компактная корзина и короткий путь
-              до заказа. Без ощущения “сырого конструктора”.
+              Быстрый заказ из меню, актуальные предложения и короткие ролики от Кунжутика в одном месте. Забирайте самовывозом или оформляйте доставку.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="#menu">Открыть меню</a>
-              <a class="button button-secondary" href="#demo">Смотреть demo</a>
+              <a class="button button-secondary" id="map-link" href="#" target="_blank" rel="noreferrer">Открыть карту</a>
             </div>
+            <div class="social-links" id="social-links"></div>
             <div class="hero-stats" id="features"></div>
           </div>
           <div class="hero-stage">
             <div class="hero-panel hero-panel-dark">
-              <p class="eyebrow eyebrow-invert">Today’s Drop</p>
-              <h2>Короткие ролики уже собираются вместе с карточками продуктов.</h2>
-              <p>Story, post и local news живут внутри одной системы, а не отдельным хаотичным набором файлов.</p>
+              <p class="eyebrow eyebrow-invert">Сегодня в Кунжуте</p>
+              <h2>Горячее меню, быстрый checkout и контент для соцсетей.</h2>
+              <p>Витрина принимает заказы, а пайплайн готовит ролики и превью для Instagram, VK и Яндекс.Карт.</p>
             </div>
             <div class="hero-panel hero-panel-soft" id="promos"></div>
           </div>
@@ -48,8 +48,8 @@
         <section class="demo-section" id="demo">
           <div class="section-head section-head-wide">
             <div>
-              <p class="eyebrow">Demo Videos</p>
-              <h2>Живые превью роликов прямо на главной.</h2>
+              <p class="eyebrow">Видео</p>
+              <h2>Превью роликов прямо на главной.</h2>
             </div>
             <p class="section-note">
               Здесь встроены последние render assets пайплайна. Можно открыть плеер, посмотреть кадр и сразу понять, как выглядит social-output.
@@ -61,10 +61,10 @@
         <section class="menu-section" id="menu">
           <div class="section-head section-head-wide">
             <div>
-              <p class="eyebrow">Menu</p>
-              <h2>Каталог в спокойной сетке, без перегруженной доставки из нулевых.</h2>
+              <p class="eyebrow">Меню</p>
+              <h2>Каталог Кунжута в спокойной сетке.</h2>
             </div>
-            <p class="section-note">Быстрые категории, чистые карточки и акцент только на том, что реально помогает выбрать и заказать.</p>
+            <p class="section-note">Быстрые категории, чистые карточки и короткий путь от выбора до заказа.</p>
           </div>
           <div class="category-tabs" id="category-tabs"></div>
           <div class="menu-sections" id="menu-grid"></div>
@@ -73,25 +73,25 @@
         <section class="info-section" id="delivery">
           <div class="section-head section-head-wide">
             <div>
-              <p class="eyebrow">Delivery</p>
-              <h2>Подача сервиса как у нормального digital-бренда, а не как у тестового стенда.</h2>
+              <p class="eyebrow">Контакты</p>
+              <h2>Кунжут на карте и в соцсетях.</h2>
             </div>
           </div>
           <div class="info-grid">
             <article class="info-card">
               <span>01</span>
-              <h3>Короткий путь до заказа</h3>
-              <p>Каталог, корзина и checkout живут на одной странице. Решение принимается быстро, без перекидывания по разделам.</p>
+              <h3>Адрес</h3>
+              <p id="contact-address">ул. Дзержинского, 18</p>
             </article>
             <article class="info-card">
               <span>02</span>
-              <h3>Контент рядом с продуктом</h3>
-              <p>Ролики с маскотом не теряются в админках: они уже встроены в storefront и могут показывать товар в контексте.</p>
+              <h3>Навигация</h3>
+              <p><a id="contact-map-link" href="#" target="_blank" rel="noreferrer">Открыть в Яндекс.Картах</a></p>
             </article>
             <article class="info-card">
               <span>03</span>
-              <h3>Операционка на сервере</h3>
-              <p>Заказы сохраняются в Postgres, статусы меняются в админке, уведомления летят в Telegram без дополнительной сборки фронтенда.</p>
+              <h3>Соцсети</h3>
+              <p id="contact-social-links"></p>
             </article>
           </div>
         </section>

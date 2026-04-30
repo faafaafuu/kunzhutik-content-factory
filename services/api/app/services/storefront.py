@@ -7,14 +7,15 @@ from sqlalchemy.orm import Session
 
 from app.models.store_order import StoreOrder
 from app.services.notifications import notify_new_order
-from app.store.catalog import CATEGORIES, FEATURES, MENU_ITEMS, PROMOS, STORE_CURRENCY
+from app.store.catalog import BUSINESS_PROFILE, CATEGORIES, FEATURES, MENU_ITEMS, PROMOS, STORE_CURRENCY
 
 CATALOG_BY_ID = {item["id"]: item for item in MENU_ITEMS}
 
 
 def get_storefront_payload() -> dict:
     return {
-        "brand_name": "Kunzhutik Food Lab",
+        "brand_name": BUSINESS_PROFILE["brand_name"],
+        "business": BUSINESS_PROFILE,
         "currency": STORE_CURRENCY,
         "categories": CATEGORIES,
         "features": FEATURES,
@@ -77,7 +78,7 @@ def create_store_order(
 
 
 def build_order_number(order: StoreOrder) -> str:
-    return f"KFL-{order.created_at.strftime('%d%m')}-{str(order.id)[:8].upper()}"
+    return f"KUN-{order.created_at.strftime('%d%m')}-{str(order.id)[:8].upper()}"
 
 
 def list_store_orders(db: Session) -> list[StoreOrder]:
@@ -97,9 +98,11 @@ def update_store_order_status(db: Session, order_id, status: str) -> StoreOrder:
 def build_order_notification_summary(order: StoreOrder) -> str:
     item_lines = "\n".join(f"- {item['title']} × {item['quantity']}" for item in order.items_json)
     return (
+        f"Заведение: {BUSINESS_PROFILE['brand_name']}\n"
+        f"Адрес: {BUSINESS_PROFILE['address']}\n"
         f"Клиент: {order.customer_name}\n"
         f"Телефон: {order.customer_phone}\n"
-        f"Адрес: {order.delivery_address}\n"
+        f"Адрес доставки: {order.delivery_address}\n"
         f"Оплата: {order.payment_method}\n"
         f"Сумма: {order.total_amount} {order.currency}\n\n"
         f"{item_lines}"

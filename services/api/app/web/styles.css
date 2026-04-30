@@ -237,6 +237,28 @@ h2 {
   margin: 24px 0 26px;
 }
 
+.social-links,
+#contact-social-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.social-links a,
+#contact-social-links a,
+.info-card a {
+  color: var(--brand-2);
+  text-decoration: none;
+}
+
+.social-links a {
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .button {
   display: inline-flex;
   align-items: center;

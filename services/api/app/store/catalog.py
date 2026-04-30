@@ -1,5 +1,13 @@
 STORE_CURRENCY = "RUB"
 
+BUSINESS_PROFILE = {
+    "brand_name": "Кунжут",
+    "address": "ул. Дзержинского, 18",
+    "map_url": "https://yandex.ru/navi/org/kunzhut/164627838144?si=h642xhuqxfhvq70ru31nkj80c4",
+    "instagram_url": "https://www.instagram.com/kunzhut.food?igsh=dXVtODRxOXhrZmow",
+    "vk_url": "https://vk.ru/kunzhutfood",
+}
+
 CATEGORIES = [
     {"id": "popular", "title": "Хиты вечера"},
     {"id": "pizza", "title": "Пицца"},
@@ -128,7 +136,7 @@ MENU_ITEMS = [
 
 FEATURES = [
     {"title": "30 минут до двери", "text": "Собираем и отправляем самые популярные позиции без ожидания."},
-    {"title": "Печь на виду", "text": "Открытая кухня и понятный состав без лишнего маркетингового тумана."},
+    {"title": "Адрес", "text": "Кунжут ждёт гостей на ул. Дзержинского, 18."},
     {"title": "Кунжутик рекомендует", "text": "У каждого хита есть короткая видео-история и фирменный совет по подаче."},
 ]
 
