@@ -3,10 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#111513" />
+    <meta name="theme-color" content="#101816" />
     <title>Кунжут</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="/static/styles.css?v=20260430-storefront-v2" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260430-storefront-v3" />
   </head>
   <body>
     <div class="site-shell">
@@ -29,7 +32,7 @@
         <section class="hero">
           <div class="hero-copy">
             <p class="eyebrow">Солнечногорск · турецкая кухня</p>
-            <h1>Донеры, кофе и восточные сладости без лишних шагов.</h1>
+            <h1>Турецкий стритфуд, собранный быстро и аккуратно.</h1>
             <p class="hero-text">
               Выберите категорию, добавьте позиции в корзину и оформите заказ на финальном шаге. Заказ сразу уйдет оператору в Telegram.
             </p>
@@ -71,17 +74,21 @@
       </main>
 
       <footer class="footer" id="contacts">
-        <div>
-          <strong>Кунжут</strong>
-          <p id="contact-address">ул. Дзержинского, 18</p>
+        <div class="footer-brand">
+          <span class="footer-mark">К</span>
+          <div>
+            <strong>Кунжут</strong>
+            <p>Турецкая кухня и кофе на каждый день.</p>
+          </div>
         </div>
-        <div>
-          <strong>Контакты</strong>
-          <p id="contact-phone"></p>
+        <div class="footer-block">
+          <span>Адрес</span>
+          <strong id="contact-address">ул. Дзержинского, 18</strong>
           <p id="contact-hours"></p>
         </div>
-        <div>
-          <strong>Ссылки</strong>
+        <div class="footer-block">
+          <span>Связь</span>
+          <strong id="contact-phone"></strong>
           <p class="footer-links" id="contact-links"></p>
         </div>
       </footer>
@@ -147,6 +154,6 @@
       </aside>
     </div>
 
-    <script src="/static/app.js?v=20260430-storefront-v2" defer></script>
+    <script src="/static/app.js?v=20260430-storefront-v3" defer></script>
   </body>
 </html>
