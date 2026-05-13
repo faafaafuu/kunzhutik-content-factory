@@ -4,12 +4,13 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Resp
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.schemas.upload import UploadAssetsResponse, UploadAssetRead, UploadRead, UploadTimelineEvent
+from app.schemas.upload import UploadAssetsResponse, UploadAssetRead, UploadPipelineSummary, UploadRead, UploadTimelineEvent
 from app.services.uploads import (
     create_upload_with_file,
     get_upload_asset_bytes,
     get_upload_assets,
     get_upload_or_404,
+    get_upload_pipeline_summary,
     get_upload_timeline,
 )
 
@@ -46,6 +47,26 @@ def get_timeline(upload_id: UUID, db: Session = Depends(get_db)) -> list[UploadT
     if not upload:
         raise HTTPException(status_code=404, detail="Upload not found")
     return get_upload_timeline(db, upload_id)
+
+
+@router.get("/{upload_id}/pipeline", response_model=UploadPipelineSummary)
+def get_pipeline(upload_id: UUID, request: Request, db: Session = Depends(get_db)) -> UploadPipelineSummary:
+    summary = get_upload_pipeline_summary(db, upload_id)
+    assets = [
+        UploadAssetRead(
+            **asset,
+            download_url=str(request.url_for("download_upload_asset", upload_id=upload_id, asset_id=asset["id"])),
+        )
+        for asset in summary["assets"]
+    ]
+    return UploadPipelineSummary(
+        upload=UploadRead.model_validate(summary["upload"]),
+        analysis_results=summary["analysis_results"],
+        drafts=summary["drafts"],
+        approvals=summary["approvals"],
+        assets=assets,
+        timeline=summary["timeline"],
+    )
 
 
 @router.get("/{upload_id}/assets", response_model=UploadAssetsResponse)

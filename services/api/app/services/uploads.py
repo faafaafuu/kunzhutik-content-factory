@@ -10,6 +10,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.models.analysis_result import AnalysisResult
+from app.models.approval_task import ApprovalTask
 from app.models.content_draft import ContentDraft
 from app.models.project import Project
 from app.models.media_asset import MediaAsset
@@ -174,6 +176,36 @@ def get_upload_assets(db: Session, upload_id: UUID) -> list[dict]:
             }
         )
     return result
+
+
+def get_upload_pipeline_summary(db: Session, upload_id: UUID) -> dict:
+    upload = get_upload_or_404(db, upload_id)
+    analysis_results = (
+        db.query(AnalysisResult)
+        .filter(AnalysisResult.upload_id == upload_id)
+        .order_by(AnalysisResult.created_at.asc())
+        .all()
+    )
+    drafts = (
+        db.query(ContentDraft)
+        .filter(ContentDraft.upload_id == upload_id)
+        .order_by(ContentDraft.created_at.asc())
+        .all()
+    )
+    approvals = (
+        db.query(ApprovalTask)
+        .filter(ApprovalTask.upload_id == upload_id)
+        .order_by(ApprovalTask.created_at.asc())
+        .all()
+    )
+    return {
+        "upload": upload,
+        "analysis_results": analysis_results,
+        "drafts": drafts,
+        "approvals": approvals,
+        "assets": get_upload_assets(db, upload_id),
+        "timeline": get_upload_timeline(db, upload_id),
+    }
 
 
 def get_upload_asset_bytes(db: Session, upload_id: UUID, asset_id: UUID) -> tuple[MediaAsset, bytes]:

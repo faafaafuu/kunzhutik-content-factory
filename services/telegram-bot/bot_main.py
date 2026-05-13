@@ -196,7 +196,7 @@ async def pending(message: Message) -> None:
                 ]
             )
             await message.answer(
-                f"ApprovalTask {task.id}\nСтатус: {task.status.value}\nUpload: {task.upload_id}",
+                _format_approval_task_message(task),
                 reply_markup=keyboard,
             )
         if settings.telegram_open_access:
@@ -296,6 +296,24 @@ def _format_store_order_message(order: StoreOrder) -> str:
         f"{item_lines}"
         f"{comment_line}"
     )
+
+
+def _format_approval_task_message(task: ApprovalTask) -> str:
+    payload = task.preview_payload or {}
+    lines = [
+        f"ApprovalTask {task.id}",
+        f"Статус: {task.status.value}",
+        f"Upload: {task.upload_id}",
+        f"Блюдо: {payload.get('dish_name', 'без названия')}",
+        "",
+    ]
+    for draft in (payload.get("drafts") or [])[:4]:
+        lines.append(f"[{draft.get('platform')}/{draft.get('kind')}]")
+        lines.append(str(draft.get("caption") or ""))
+        if draft.get("cta"):
+            lines.append(f"CTA: {draft['cta']}")
+        lines.append("")
+    return "\n".join(lines).strip()
 
 
 if __name__ == "__main__":

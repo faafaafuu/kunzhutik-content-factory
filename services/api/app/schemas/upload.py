@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from app.schemas.common import ORMModel
+from shared.enums import ApprovalStatus, ContentPlatform, DraftKind
 from shared.enums import PipelineStatus
 
 
@@ -47,3 +48,53 @@ class UploadAssetRead(BaseModel):
 class UploadAssetsResponse(BaseModel):
     upload_id: UUID
     assets: list[UploadAssetRead]
+
+
+class UploadAnalysisRead(ORMModel):
+    id: UUID
+    status: PipelineStatus
+    provider: str
+    dish_name: str | None = None
+    ingredients: list
+    visual_mood: str | None = None
+    plating_style: str | None = None
+    features_json: dict
+    created_at: datetime
+
+
+class UploadDraftRead(ORMModel):
+    id: UUID
+    platform: ContentPlatform
+    kind: DraftKind
+    status: PipelineStatus
+    version: int
+    title: str | None = None
+    caption: str
+    cta: str | None = None
+    short_text: str | None = None
+    long_text: str | None = None
+    script_text: str | None = None
+    persona_name: str
+    metadata_json: dict
+    created_at: datetime
+
+
+class UploadApprovalRead(ORMModel):
+    id: UUID
+    status: ApprovalStatus
+    telegram_chat_id: str | None = None
+    telegram_message_id: str | None = None
+    preview_payload: dict
+    decision_note: str | None = None
+    decided_by: str | None = None
+    decided_at: datetime | None = None
+    created_at: datetime
+
+
+class UploadPipelineSummary(BaseModel):
+    upload: UploadRead
+    analysis_results: list[UploadAnalysisRead]
+    drafts: list[UploadDraftRead]
+    approvals: list[UploadApprovalRead]
+    assets: list[UploadAssetRead]
+    timeline: list[UploadTimelineEvent]

@@ -7,9 +7,10 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.approval_task import ApprovalTask
+from app.models.upload import Upload
 from app.services.audit import log_event
 from app.services.workflow import enqueue_approval_dispatch
-from shared.enums import ApprovalStatus, ApprovalTrigger
+from shared.enums import ApprovalStatus, ApprovalTrigger, PipelineStatus
 
 
 def get_approval_task(db: Session, approval_task_id: UUID) -> ApprovalTask | None:
@@ -46,7 +47,21 @@ def apply_approval_decision(
         actor,
         {"approval_task_id": str(task.id), "note": note, "via": via.value},
     )
+    upload = db.query(Upload).filter(Upload.id == task.upload_id).first()
+    if upload:
+        if task.status == ApprovalStatus.approved:
+            upload.status = PipelineStatus.completed
+        elif task.status in {ApprovalStatus.rejected, ApprovalStatus.regenerate_requested}:
+            upload.status = PipelineStatus.needs_review
+        log_event(
+            db,
+            task.project_id,
+            "upload",
+            str(task.upload_id),
+            "upload.status_updated",
+            "approval-service",
+            {"status": upload.status.value, "approval_task_id": str(task.id)},
+        )
     db.commit()
     db.refresh(task)
     return task
-
