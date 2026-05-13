@@ -59,5 +59,5 @@ def get_orders(db: Session = Depends(get_db)) -> StoreOrderListResponse:
 
 @router.patch("/api/v1/store/orders/{order_id}", response_model=StoreOrderRead)
 def patch_order(order_id: UUID, payload: StoreOrderStatusUpdateRequest, db: Session = Depends(get_db)) -> StoreOrderRead:
-    order = update_store_order_status(db, order_id, payload.status)
+    order = update_store_order_status(db, order_id, payload.status, actor="api")
     return StoreOrderRead.model_validate(order)

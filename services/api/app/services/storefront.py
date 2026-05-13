@@ -2,17 +2,20 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.core.config import settings
 from app.models.store_order import StoreOrder
-from app.services.notifications import notify_new_order
+from app.services.notifications import ORDER_STATUS_LABELS, notify_new_order, notify_order_status_update
 from app.store.catalog import BUSINESS_PROFILE, CATEGORIES, FEATURES, MENU_ITEMS, PROMOS, STORE_CURRENCY
 
 CATALOG_BY_ID = {item["id"]: item for item in MENU_ITEMS}
+ORDER_STATUS_VALUES = set(ORDER_STATUS_LABELS)
 
 
 def get_storefront_payload() -> dict:
@@ -74,13 +77,26 @@ def create_store_order(
         source_json={
             "channel": "web_storefront",
             "customer_profile": _sanitize_customer_profile(customer_profile),
+            "status_history": [
+                {
+                    "from": None,
+                    "to": "new",
+                    "actor": "storefront",
+                    "at": datetime.now(timezone.utc).isoformat(),
+                }
+            ],
         },
     )
     db.add(order)
     db.commit()
     db.refresh(order)
     order_number = build_order_number(order)
-    notify_new_order(order_number, build_order_notification_summary(order))
+    notify_new_order(
+        str(order.id),
+        order_number,
+        build_order_notification_summary(order),
+        customer_telegram_id=extract_verified_customer_telegram_id(order),
+    )
     return order, order_number
 
 
@@ -92,13 +108,40 @@ def list_store_orders(db: Session) -> list[StoreOrder]:
     return db.query(StoreOrder).order_by(StoreOrder.created_at.desc()).all()
 
 
-def update_store_order_status(db: Session, order_id, status: str) -> StoreOrder:
+def update_store_order_status(db: Session, order_id, status: str, *, actor: str = "api") -> StoreOrder:
+    if status not in ORDER_STATUS_VALUES:
+        raise HTTPException(status_code=400, detail="Unsupported order status")
+
     order = db.query(StoreOrder).filter(StoreOrder.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+
+    previous_status = order.status
+    if previous_status == status:
+        return order
+
     order.status = status
+    source_json = dict(order.source_json) if isinstance(order.source_json, dict) else {}
+    history = list(source_json.get("status_history") or [])
+    history.append(
+        {
+            "from": previous_status,
+            "to": status,
+            "actor": actor,
+            "at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+    source_json["status_history"] = history[-30:]
+    order.source_json = source_json
+    flag_modified(order, "source_json")
     db.commit()
     db.refresh(order)
+
+    notify_order_status_update(
+        build_order_number(order),
+        order.status,
+        customer_telegram_id=extract_verified_customer_telegram_id(order),
+    )
     return order
 
 
@@ -106,6 +149,7 @@ def build_order_notification_summary(order: StoreOrder) -> str:
     item_lines = "\n".join(f"- {item['title']} × {item['quantity']}" for item in order.items_json)
     customer_profile = order.source_json.get("customer_profile") if isinstance(order.source_json, dict) else None
     profile_line = _format_customer_profile(customer_profile)
+    comment_line = f"\n\nКомментарий: {order.comment}" if order.comment else ""
     return (
         f"Заведение: {BUSINESS_PROFILE['brand_name']}\n"
         f"Адрес: {BUSINESS_PROFILE['address']}\n"
@@ -113,10 +157,22 @@ def build_order_notification_summary(order: StoreOrder) -> str:
         f"Телефон: {order.customer_phone}\n"
         f"{profile_line}"
         f"Адрес доставки: {order.delivery_address}\n"
+        f"Время: {order.delivery_slot or 'как можно скорее'}\n"
         f"Оплата: {order.payment_method}\n"
         f"Сумма: {order.total_amount} {order.currency}\n\n"
         f"{item_lines}"
+        f"{comment_line}"
     )
+
+
+def extract_verified_customer_telegram_id(order: StoreOrder) -> str | None:
+    customer_profile = order.source_json.get("customer_profile") if isinstance(order.source_json, dict) else None
+    if not isinstance(customer_profile, dict):
+        return None
+    if customer_profile.get("provider") != "telegram_link" or customer_profile.get("verified") != "true":
+        return None
+    profile_id = customer_profile.get("id")
+    return str(profile_id) if profile_id else None
 
 
 def _sanitize_customer_profile(customer_profile: dict | None) -> dict:

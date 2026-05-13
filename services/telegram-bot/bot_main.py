@@ -13,7 +13,10 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.approval_task import ApprovalTask
+from app.models.store_order import StoreOrder
 from app.services.approvals import apply_approval_decision
+from app.services.notifications import ORDER_STATUS_LABELS, build_order_status_keyboard
+from app.services.storefront import build_order_number, update_store_order_status
 from app.store.catalog import BUSINESS_PROFILE, CATEGORIES, MENU_ITEMS
 from shared.enums import ApprovalStatus, ApprovalTrigger
 
@@ -65,7 +68,7 @@ async def start(message: Message) -> None:
     await message.answer(
         f"{BUSINESS_PROFILE['brand_name']} bot активен.\n"
         f"Режим: {mode}.\n"
-        "Команды: /menu, /contacts, /pending.\n"
+        "Команды: /menu, /contacts, /orders, /pending.\n"
         "Нажмите кнопку ниже, чтобы открыть меню и оформить заказ.",
         reply_markup=storefront_keyboard(message.from_user),
     )
@@ -105,6 +108,33 @@ async def menu(message: Message) -> None:
     lines.append("")
     lines.append("Полное меню доступно на сайте.")
     await message.answer("\n".join(lines), reply_markup=storefront_keyboard(message.from_user))
+
+
+@router.message(F.text == "/orders")
+async def orders(message: Message) -> None:
+    if await reject_if_forbidden(message=message):
+        return
+
+    db: Session = SessionLocal()
+    try:
+        active_orders = (
+            db.query(StoreOrder)
+            .filter(StoreOrder.status.in_(["new", "confirmed", "preparing", "delivering"]))
+            .order_by(StoreOrder.created_at.desc())
+            .limit(8)
+            .all()
+        )
+        if not active_orders:
+            await message.answer("Активных заказов нет.")
+            return
+
+        for order in active_orders:
+            await message.answer(
+                _format_store_order_message(order),
+                reply_markup=build_order_status_keyboard(str(order.id)),
+            )
+    finally:
+        db.close()
 
 
 def _with_signed_telegram_profile(url: str, user) -> str:
@@ -206,6 +236,34 @@ async def decision_callback(callback: CallbackQuery) -> None:
         db.close()
 
 
+@router.callback_query(F.data.startswith("order_status:"))
+async def order_status_callback(callback: CallbackQuery) -> None:
+    if await reject_if_forbidden(callback=callback):
+        return
+
+    try:
+        _, order_id, status = callback.data.split(":", maxsplit=2)
+    except ValueError:
+        await callback.answer("Некорректная команда", show_alert=True)
+        return
+
+    if status not in ORDER_STATUS_LABELS:
+        await callback.answer("Неподдерживаемый статус", show_alert=True)
+        return
+
+    db: Session = SessionLocal()
+    try:
+        order = update_store_order_status(db, UUID(order_id), status, actor=_format_actor(callback))
+        await callback.answer(f"Статус: {ORDER_STATUS_LABELS[status]}")
+        if callback.message:
+            await callback.message.edit_text(
+                _format_store_order_message(order),
+                reply_markup=build_order_status_keyboard(str(order.id)),
+            )
+    finally:
+        db.close()
+
+
 async def main() -> None:
     if not settings.telegram_bot_token:
         logging.getLogger(__name__).warning("TELEGRAM_BOT_TOKEN is empty; bot will not start")
@@ -220,6 +278,24 @@ def _format_actor(callback: CallbackQuery) -> str:
     user = callback.from_user
     username = f"@{user.username}" if user.username else "no-username"
     return f"telegram:{user.id}:{username}"
+
+
+def _format_store_order_message(order: StoreOrder) -> str:
+    item_lines = "\n".join(f"- {item['title']} × {item['quantity']}" for item in order.items_json)
+    status_label = ORDER_STATUS_LABELS.get(order.status, order.status)
+    comment_line = f"\n\nКомментарий: {order.comment}" if order.comment else ""
+    return (
+        f"Заказ {build_order_number(order)}\n"
+        f"Статус: {status_label}\n"
+        f"Клиент: {order.customer_name}\n"
+        f"Телефон: {order.customer_phone}\n"
+        f"Адрес: {order.delivery_address}\n"
+        f"Время: {order.delivery_slot or 'как можно скорее'}\n"
+        f"Оплата: {order.payment_method}\n"
+        f"Сумма: {order.total_amount} {order.currency}\n\n"
+        f"{item_lines}"
+        f"{comment_line}"
+    )
 
 
 if __name__ == "__main__":
