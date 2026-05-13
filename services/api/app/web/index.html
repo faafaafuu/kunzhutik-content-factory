@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="/static/styles.css?v=20260514-dark-gradient-v1" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260514-storefront-polish-v1" />
   </head>
   <body>
     <div class="site-shell">
@@ -62,7 +62,11 @@
           </div>
         </section>
 
-        <section class="quick-info" id="features"></section>
+        <section class="quick-info is-loading" id="features" aria-busy="true">
+          <article class="skeleton-card"></article>
+          <article class="skeleton-card"></article>
+          <article class="skeleton-card"></article>
+        </section>
 
         <section class="menu-section" id="menu">
           <div class="section-head">
@@ -72,8 +76,13 @@
             </div>
             <p class="section-note">Переключайте категории и собирайте заказ как в привычном сервисе доставки.</p>
           </div>
-          <div class="category-tabs" id="category-tabs" role="tablist" aria-label="Категории меню"></div>
-          <div class="menu-group-grid" id="menu-grid"></div>
+          <div class="category-tabs is-loading" id="category-tabs" role="tablist" aria-label="Категории меню" aria-busy="true"></div>
+          <div class="menu-group-grid is-loading" id="menu-grid" aria-busy="true">
+            <article class="menu-card skeleton-menu-card"></article>
+            <article class="menu-card skeleton-menu-card"></article>
+            <article class="menu-card skeleton-menu-card"></article>
+            <article class="menu-card skeleton-menu-card"></article>
+          </div>
         </section>
       </main>
 
@@ -105,7 +114,9 @@
         <button class="button button-primary" id="open-cart" type="button">Перейти к заказу</button>
       </div>
 
-      <aside class="cart-drawer" id="cart-drawer" aria-hidden="true">
+      <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+
+      <aside class="cart-drawer" id="cart-drawer" aria-hidden="true" aria-labelledby="cart-title">
         <div class="cart-header">
           <div>
             <p class="eyebrow">Заказ</p>
@@ -171,13 +182,13 @@
             <option value="online">Онлайн</option>
           </select>
           <textarea name="comment" placeholder="Комментарий к заказу"></textarea>
-          <button class="button button-primary button-block" type="submit">Подтвердить заказ</button>
+          <button class="button button-primary button-block" id="checkout-submit" type="submit">Подтвердить заказ</button>
           <button class="button button-secondary button-block" id="checkout-back" type="button">Назад в корзину</button>
           <p class="form-note" id="checkout-status">После подтверждения заказ уйдет оператору в Telegram.</p>
         </form>
       </aside>
     </div>
 
-    <script src="/static/app.js?v=20260514-dark-gradient-v1" defer></script>
+    <script src="/static/app.js?v=20260514-storefront-polish-v1" defer></script>
   </body>
 </html>

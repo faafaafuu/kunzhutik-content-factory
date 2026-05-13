@@ -46,6 +46,10 @@ body {
   letter-spacing: 0;
 }
 
+body.drawer-open {
+  overflow: hidden;
+}
+
 button,
 input,
 select,
@@ -149,6 +153,13 @@ a {
 .auth-grid button {
   border: 0;
   cursor: pointer;
+}
+
+button:disabled,
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
 }
 
 .cart-button {
@@ -420,6 +431,11 @@ h3 {
   padding: 18px 0 30px;
 }
 
+.quick-info.is-loading,
+.menu-group-grid.is-loading {
+  pointer-events: none;
+}
+
 .quick-info article {
   padding: 18px;
   border: 1px solid var(--line);
@@ -427,6 +443,36 @@ h3 {
   background: rgba(255, 246, 234, 0.08);
   backdrop-filter: blur(18px);
   box-shadow: var(--shadow-sm);
+}
+
+.skeleton-card,
+.skeleton-menu-card {
+  position: relative;
+  min-height: 110px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 246, 234, 0.07);
+}
+
+.skeleton-menu-card {
+  min-height: 310px;
+}
+
+.skeleton-card::after,
+.skeleton-menu-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 246, 234, 0.13), transparent);
+  animation: shimmer 1.3s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 .quick-info article:nth-child(2) {
@@ -485,6 +531,19 @@ h3 {
   background: rgba(16, 16, 15, 0.82);
   backdrop-filter: blur(18px);
   scrollbar-width: none;
+}
+
+.category-tabs.is-loading {
+  min-height: 70px;
+}
+
+.category-tabs.is-loading::before,
+.category-tabs.is-loading::after {
+  content: "";
+  flex: 0 0 160px;
+  height: 42px;
+  border-radius: 999px;
+  background: rgba(255, 246, 234, 0.08);
 }
 
 .category-tabs::-webkit-scrollbar {
@@ -939,6 +998,42 @@ h3 {
   border: 1px dashed var(--line-strong);
   border-radius: 16px;
   background: rgba(255, 246, 234, 0.07);
+}
+
+.empty-state strong,
+.empty-state span {
+  display: block;
+}
+
+.empty-state strong {
+  margin-bottom: 6px;
+  color: var(--cream);
+  font-weight: 900;
+}
+
+.empty-state-wide {
+  grid-column: 1 / -1;
+  min-height: 220px;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 8px;
+}
+
+.error-state .button {
+  margin-top: 10px;
+}
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  background: rgba(0, 0, 0, 0.52);
+  backdrop-filter: blur(7px);
+}
+
+.drawer-backdrop[hidden] {
+  display: none;
 }
 
 @media (max-width: 1100px) {

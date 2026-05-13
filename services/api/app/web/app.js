@@ -2,6 +2,7 @@ const state = {
   menu: null,
   activeCategoryId: null,
   cart: new Map(),
+  eventsBound: false,
 };
 
 const TELEGRAM_BOT_URL = "https://t.me/orderbookk_bot?start=order";
@@ -21,6 +22,7 @@ const els = {
   activeCategoryTitle: document.getElementById("active-category-title"),
   menuGrid: document.getElementById("menu-grid"),
   cartDrawer: document.getElementById("cart-drawer"),
+  drawerBackdrop: document.getElementById("drawer-backdrop"),
   cartReview: document.getElementById("cart-review"),
   cartItems: document.getElementById("cart-items"),
   cartTotal: document.getElementById("cart-total"),
@@ -34,6 +36,7 @@ const els = {
   checkoutNext: document.getElementById("checkout-next"),
   checkoutBack: document.getElementById("checkout-back"),
   checkoutForm: document.getElementById("checkout-form"),
+  checkoutSubmit: document.getElementById("checkout-submit"),
   checkoutStatus: document.getElementById("checkout-status"),
   authStatus: document.getElementById("auth-status"),
   cartTitle: document.getElementById("cart-title"),
@@ -43,11 +46,14 @@ const els = {
 
 bootstrap().catch((error) => {
   console.error(error);
-  els.menuGrid.innerHTML = "<p class='empty-state'>Не удалось загрузить меню.</p>";
+  renderMenuError();
 });
 
 async function bootstrap() {
   const response = await fetch("/api/v1/store/menu", { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`Menu request failed: ${response.status}`);
+  }
   state.menu = await response.json();
   state.activeCategoryId = state.menu.categories[0]?.id || null;
 
@@ -63,12 +69,33 @@ async function bootstrap() {
 }
 
 function bindEvents() {
+  if (state.eventsBound) {
+    return;
+  }
+  state.eventsBound = true;
   els.cartPill.addEventListener("click", openCartReview);
   els.openCart.addEventListener("click", openCartReview);
   els.cartClose.addEventListener("click", closeCart);
+  els.drawerBackdrop.addEventListener("click", closeCart);
   els.checkoutNext.addEventListener("click", showCheckout);
   els.checkoutBack.addEventListener("click", showCartReview);
   els.checkoutForm.addEventListener("submit", submitOrder);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeCart();
+    }
+  });
+  document.addEventListener("click", (event) => {
+    const retryButton = event.target.closest("[data-retry-menu]");
+    if (retryButton) {
+      retryButton.disabled = true;
+      retryButton.textContent = "Загружаю...";
+      bootstrap().catch((error) => {
+        console.error(error);
+        renderMenuError();
+      });
+    }
+  });
   document.querySelectorAll("[data-auth]").forEach((button) => {
     button.addEventListener("click", () => applyQuickAuth(button.dataset.auth));
   });
@@ -126,6 +153,8 @@ function renderBusinessProfile() {
 }
 
 function renderFeatures() {
+  els.features.classList.remove("is-loading");
+  els.features.removeAttribute("aria-busy");
   els.features.innerHTML = state.menu.features
     .map(
       (feature) => `
@@ -139,6 +168,12 @@ function renderFeatures() {
 }
 
 function renderCategories() {
+  els.categoryTabs.classList.remove("is-loading");
+  els.categoryTabs.removeAttribute("aria-busy");
+  if (!state.menu.categories.length) {
+    els.categoryTabs.innerHTML = "";
+    return;
+  }
   els.categoryTabs.innerHTML = state.menu.categories
     .map(
       (category) => `
@@ -162,7 +197,18 @@ function renderMenu() {
   const category = state.menu.categories.find((item) => item.id === state.activeCategoryId);
   const items = state.menu.items.filter((item) => item.category_id === state.activeCategoryId);
   els.activeCategoryTitle.textContent = category?.title || "Меню";
+  els.menuGrid.classList.remove("is-loading");
+  els.menuGrid.removeAttribute("aria-busy");
 
+  if (!items.length) {
+    els.menuGrid.innerHTML = `
+      <div class="empty-state empty-state-wide">
+        <strong>В этой категории пока пусто</strong>
+        <span>Переключите раздел или загляните позже.</span>
+      </div>
+    `;
+    return;
+  }
   els.menuGrid.innerHTML = items.map(renderItemCard).join("");
   els.menuGrid.querySelectorAll("[data-add-item]").forEach((button) => {
     button.addEventListener("click", () => addToCart(button.dataset.addItem));
@@ -173,7 +219,7 @@ function renderItemCard(item) {
   return `
     <article class="menu-card" style="--card-accent:${item.accent}">
       <div class="menu-art">
-        ${item.image_url ? `<img src="${item.image_url}" alt="${item.title}" loading="lazy" />` : ""}
+        ${item.image_url ? `<img src="${item.image_url}" alt="${item.title}" loading="lazy" decoding="async" />` : ""}
       </div>
       <div class="menu-copy">
         <div class="menu-meta">
@@ -254,11 +300,15 @@ function openCartReview() {
   showCartReview();
   els.cartDrawer.classList.add("open");
   els.cartDrawer.setAttribute("aria-hidden", "false");
+  els.drawerBackdrop.hidden = false;
+  document.body.classList.add("drawer-open");
 }
 
 function closeCart() {
   els.cartDrawer.classList.remove("open");
   els.cartDrawer.setAttribute("aria-hidden", "true");
+  els.drawerBackdrop.hidden = true;
+  document.body.classList.remove("drawer-open");
 }
 
 function showCartReview() {
@@ -344,31 +394,63 @@ async function submitOrder(event) {
     items,
   };
 
-  els.checkoutStatus.textContent = "Отправляю заказ...";
+  setCheckoutSubmitting(true, "Отправляю заказ...");
 
-  const response = await fetch("/api/v1/store/orders", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  try {
+    const response = await fetch("/api/v1/store/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: "Ошибка оформления заказа" }));
-    els.checkoutStatus.textContent = typeof error.detail === "string" ? error.detail : "Не удалось оформить заказ.";
-    return;
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "Ошибка оформления заказа" }));
+      setCheckoutSubmitting(false, typeof error.detail === "string" ? error.detail : "Не удалось оформить заказ.");
+      return;
+    }
+
+    const result = await response.json();
+    state.cart.clear();
+    els.checkoutForm.reset();
+    renderCart();
+    setCheckoutSubmitting(false, `Заказ ${result.order_number} принят.`);
+
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.HapticFeedback?.notificationOccurred("success");
+      window.Telegram.WebApp.MainButton.setText(`Заказ ${result.order_number} принят`);
+      window.Telegram.WebApp.MainButton.show();
+    }
+  } catch (error) {
+    console.error(error);
+    setCheckoutSubmitting(false, "Сеть недоступна. Попробуйте отправить заказ ещё раз.");
   }
+}
 
-  const result = await response.json();
-  state.cart.clear();
-  els.checkoutForm.reset();
-  renderCart();
-  els.checkoutStatus.textContent = `Заказ ${result.order_number} принят.`;
+function renderMenuError() {
+  els.features.classList.remove("is-loading");
+  els.categoryTabs.classList.remove("is-loading");
+  els.menuGrid.classList.remove("is-loading");
+  els.features.removeAttribute("aria-busy");
+  els.categoryTabs.removeAttribute("aria-busy");
+  els.menuGrid.removeAttribute("aria-busy");
+  els.features.innerHTML = "";
+  els.heroTags.innerHTML = "";
+  els.categoryTabs.innerHTML = "";
+  els.activeCategoryTitle.textContent = "Меню недоступно";
+  els.menuGrid.innerHTML = `
+    <div class="empty-state empty-state-wide error-state">
+      <strong>Не удалось загрузить меню</strong>
+      <span>Проверьте подключение или повторите попытку.</span>
+      <button class="button button-primary" type="button" data-retry-menu>Повторить</button>
+    </div>
+  `;
+}
 
-  if (window.Telegram?.WebApp) {
-    window.Telegram.WebApp.HapticFeedback?.notificationOccurred("success");
-    window.Telegram.WebApp.MainButton.setText(`Заказ ${result.order_number} принят`);
-    window.Telegram.WebApp.MainButton.show();
-  }
+function setCheckoutSubmitting(isSubmitting, statusText) {
+  els.checkoutSubmit.disabled = isSubmitting;
+  els.checkoutSubmit.textContent = isSubmitting ? "Отправляю..." : "Подтвердить заказ";
+  els.checkoutForm.classList.toggle("is-submitting", isSubmitting);
+  els.checkoutStatus.textContent = statusText;
 }
 
 function getCustomerProfile() {
