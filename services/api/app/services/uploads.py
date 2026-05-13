@@ -32,6 +32,10 @@ def get_upload_or_404(db: Session, upload_id: UUID) -> Upload:
     return upload
 
 
+def list_uploads(db: Session, limit: int = 30) -> list[Upload]:
+    return db.query(Upload).order_by(Upload.created_at.desc()).limit(limit).all()
+
+
 async def create_upload_with_file(
     db: Session,
     project_id: UUID,

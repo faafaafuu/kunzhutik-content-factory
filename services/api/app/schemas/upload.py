@@ -21,6 +21,10 @@ class UploadRead(ORMModel):
     updated_at: datetime
 
 
+class UploadListResponse(BaseModel):
+    uploads: list[UploadRead]
+
+
 class UploadTimelineEvent(BaseModel):
     event_type: str
     actor: str
