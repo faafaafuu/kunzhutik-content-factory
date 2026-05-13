@@ -19,6 +19,7 @@ from app.models.content_draft import ContentDraft
 from app.models.upload import Upload
 from app.services.audit import log_event
 from app.services.media_generation import generate_media_assets_for_drafts
+from app.services.publications import publish_task_with_mock_adapter
 from shared.enums import ApprovalStatus, ContentPlatform, DraftKind, PipelineStatus
 
 logger = get_task_logger(__name__)
@@ -240,6 +241,15 @@ def dispatch_approval_preview(approval_task_id: str) -> None:
             {"approval_task_id": str(approval.id), "telegram_message_id": approval.telegram_message_id},
         )
         db.commit()
+    finally:
+        db.close()
+
+
+@celery_app.task(name="app.tasks.publish_publication_task", autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
+def publish_publication_task(publication_task_id: str) -> None:
+    db: Session = SessionLocal()
+    try:
+        publish_task_with_mock_adapter(db, UUID(publication_task_id))
     finally:
         db.close()
 

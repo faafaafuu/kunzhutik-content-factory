@@ -10,3 +10,6 @@ def enqueue_upload_pipeline(upload_id: UUID) -> None:
 def enqueue_approval_dispatch(approval_task_id: UUID) -> None:
     celery_app.send_task("app.tasks.dispatch_approval_preview", kwargs={"approval_task_id": str(approval_task_id)})
 
+
+def enqueue_publication_task(publication_task_id: UUID) -> None:
+    celery_app.send_task("app.tasks.publish_publication_task", kwargs={"publication_task_id": str(publication_task_id)})

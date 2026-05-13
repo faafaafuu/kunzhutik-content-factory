@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.models.approval_task import ApprovalTask
 from app.models.upload import Upload
 from app.services.audit import log_event
+from app.services.publications import create_publication_tasks_for_upload
 from app.services.workflow import enqueue_approval_dispatch
 from shared.enums import ApprovalStatus, ApprovalTrigger, PipelineStatus
 
@@ -51,6 +52,16 @@ def apply_approval_decision(
     if upload:
         if task.status == ApprovalStatus.approved:
             upload.status = PipelineStatus.completed
+            publication_tasks = create_publication_tasks_for_upload(db, task.upload_id, actor=actor)
+            log_event(
+                db,
+                task.project_id,
+                "upload",
+                str(task.upload_id),
+                "publication_tasks.ready",
+                "approval-service",
+                {"count": len(publication_tasks), "approval_task_id": str(task.id)},
+            )
         elif task.status in {ApprovalStatus.rejected, ApprovalStatus.regenerate_requested}:
             upload.status = PipelineStatus.needs_review
         log_event(

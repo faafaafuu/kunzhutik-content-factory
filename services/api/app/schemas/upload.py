@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from app.schemas.common import ORMModel
+from app.schemas.publication import PublicationTaskWithResults
 from shared.enums import ApprovalStatus, ContentPlatform, DraftKind
 from shared.enums import PipelineStatus
 
@@ -96,5 +97,6 @@ class UploadPipelineSummary(BaseModel):
     analysis_results: list[UploadAnalysisRead]
     drafts: list[UploadDraftRead]
     approvals: list[UploadApprovalRead]
+    publication_tasks: list[PublicationTaskWithResults]
     assets: list[UploadAssetRead]
     timeline: list[UploadTimelineEvent]

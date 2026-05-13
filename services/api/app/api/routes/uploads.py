@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Resp
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
+from app.schemas.publication import PublicationTaskRead, PublicationTaskWithResults
 from app.schemas.upload import UploadAssetsResponse, UploadAssetRead, UploadPipelineSummary, UploadRead, UploadTimelineEvent
 from app.services.uploads import (
     create_upload_with_file,
@@ -64,6 +65,13 @@ def get_pipeline(upload_id: UUID, request: Request, db: Session = Depends(get_db
         analysis_results=summary["analysis_results"],
         drafts=summary["drafts"],
         approvals=summary["approvals"],
+        publication_tasks=[
+            PublicationTaskWithResults(
+                **PublicationTaskRead.model_validate(task).model_dump(),
+                results=summary["publication_results"].get(task.id, []),
+            )
+            for task in summary["publication_tasks"]
+        ],
         assets=assets,
         timeline=summary["timeline"],
     )

@@ -20,6 +20,7 @@ from app.models.video_asset import VideoAsset
 from app.models.voice_asset import VoiceAsset
 from app.schemas.upload import UploadTimelineEvent
 from app.services.audit import log_event
+from app.services.publications import list_publication_results, list_publication_tasks
 from app.services.storage import download_bytes, upload_bytes
 from shared.enums import AssetKind, PipelineStatus
 
@@ -198,11 +199,14 @@ def get_upload_pipeline_summary(db: Session, upload_id: UUID) -> dict:
         .order_by(ApprovalTask.created_at.asc())
         .all()
     )
+    publication_tasks = list_publication_tasks(db, upload_id=upload_id)
     return {
         "upload": upload,
         "analysis_results": analysis_results,
         "drafts": drafts,
         "approvals": approvals,
+        "publication_tasks": publication_tasks,
+        "publication_results": list_publication_results(db, [task.id for task in publication_tasks]),
         "assets": get_upload_assets(db, upload_id),
         "timeline": get_upload_timeline(db, upload_id),
     }
