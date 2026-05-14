@@ -3,8 +3,9 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import get_db, require_admin, require_operator
 from app.models.project import Project
+from app.models.operator_user import OperatorUser
 from app.schemas.project import ProjectCreate, ProjectRead
 from app.services.audit import log_event
 from app.services.character import create_default_character
@@ -13,12 +14,16 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 
 
 @router.get("", response_model=List[ProjectRead])
-def list_projects(db: Session = Depends(get_db)) -> list[ProjectRead]:
+def list_projects(db: Session = Depends(get_db), user: OperatorUser = Depends(require_operator)) -> list[ProjectRead]:
     return [ProjectRead.model_validate(project) for project in db.query(Project).order_by(Project.created_at.desc()).all()]
 
 
 @router.post("", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
-def create_project(payload: ProjectCreate, db: Session = Depends(get_db)) -> ProjectRead:
+def create_project(
+    payload: ProjectCreate,
+    db: Session = Depends(get_db),
+    user: OperatorUser = Depends(require_admin),
+) -> ProjectRead:
     existing = db.query(Project).filter(Project.slug == payload.slug).first()
     if existing:
         raise HTTPException(status_code=409, detail="Project slug already exists")
@@ -31,4 +36,3 @@ def create_project(payload: ProjectCreate, db: Session = Depends(get_db)) -> Pro
     db.commit()
     db.refresh(project)
     return ProjectRead.model_validate(project)
-

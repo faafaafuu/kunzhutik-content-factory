@@ -1,11 +1,12 @@
 from pathlib import Path
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import get_db, require_operator
+from app.models.operator_user import OperatorUser
 from app.schemas.storefront import (
     StoreMenuResponse,
     StoreOrderCreateRequest,
@@ -14,6 +15,7 @@ from app.schemas.storefront import (
     StoreOrderRead,
     StoreOrderStatusUpdateRequest,
 )
+from app.services.auth import get_current_operator
 from app.services.storefront import create_store_order, get_storefront_payload, list_store_orders, update_store_order_status
 
 router = APIRouter(tags=["storefront"])
@@ -32,7 +34,11 @@ def telegram_storefront() -> FileResponse:
 
 
 @router.get("/admin/orders", response_class=HTMLResponse, include_in_schema=False)
-def storefront_admin() -> FileResponse:
+def storefront_admin(request: Request, db: Session = Depends(get_db)):
+    try:
+        get_current_operator(db, request)
+    except HTTPException:
+        return RedirectResponse("/admin/login", status_code=status.HTTP_303_SEE_OTHER)
     return FileResponse(STATIC_DIR / "admin.html")
 
 
@@ -58,11 +64,16 @@ def create_order(payload: StoreOrderCreateRequest, db: Session = Depends(get_db)
 
 
 @router.get("/api/v1/store/orders", response_model=StoreOrderListResponse)
-def get_orders(db: Session = Depends(get_db)) -> StoreOrderListResponse:
+def get_orders(db: Session = Depends(get_db), user: OperatorUser = Depends(require_operator)) -> StoreOrderListResponse:
     return StoreOrderListResponse(orders=[StoreOrderRead.model_validate(order) for order in list_store_orders(db)])
 
 
 @router.patch("/api/v1/store/orders/{order_id}", response_model=StoreOrderRead)
-def patch_order(order_id: UUID, payload: StoreOrderStatusUpdateRequest, db: Session = Depends(get_db)) -> StoreOrderRead:
-    order = update_store_order_status(db, order_id, payload.status, actor="api")
+def patch_order(
+    order_id: UUID,
+    payload: StoreOrderStatusUpdateRequest,
+    db: Session = Depends(get_db),
+    user: OperatorUser = Depends(require_operator),
+) -> StoreOrderRead:
+    order = update_store_order_status(db, order_id, payload.status, actor=f"dashboard:{user.username}")
     return StoreOrderRead.model_validate(order)

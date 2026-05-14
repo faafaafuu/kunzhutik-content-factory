@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     telegram_open_access: bool = Field(default=False, alias="TELEGRAM_OPEN_ACCESS")
     telegram_allowed_user_ids_raw: str = Field(default="", alias="TELEGRAM_ALLOWED_USER_IDS")
 
+    dashboard_secret_key: str = Field(default="change-me-dashboard-secret", alias="DASHBOARD_SECRET_KEY")
+    dashboard_cookie_name: str = Field(default="kunzhutik_dashboard_session", alias="DASHBOARD_COOKIE_NAME")
+    dashboard_bootstrap_username: str | None = Field(default=None, alias="DASHBOARD_BOOTSTRAP_USERNAME")
+    dashboard_bootstrap_password: str | None = Field(default=None, alias="DASHBOARD_BOOTSTRAP_PASSWORD")
+    dashboard_bootstrap_role: str = Field(default="admin", alias="DASHBOARD_BOOTSTRAP_ROLE")
+
     default_project_slug: str = Field(default="kunzhutik-food", alias="DEFAULT_PROJECT_SLUG")
     default_project_name: str = Field(default="Kunzhutik Food Lab", alias="DEFAULT_PROJECT_NAME")
     default_character_name: str = Field(default="Кунжутик", alias="DEFAULT_CHARACTER_NAME")

@@ -4,6 +4,7 @@ from app.models.audit_event import AuditEvent
 from app.models.character_profile import CharacterProfile
 from app.models.content_draft import ContentDraft
 from app.models.media_asset import MediaAsset
+from app.models.operator_user import OperatorUser
 from app.models.project import Project
 from app.models.publication_result import PublicationResult
 from app.models.publication_task import PublicationTask
@@ -19,6 +20,7 @@ __all__ = [
     "CharacterProfile",
     "ContentDraft",
     "MediaAsset",
+    "OperatorUser",
     "Project",
     "PublicationResult",
     "PublicationTask",

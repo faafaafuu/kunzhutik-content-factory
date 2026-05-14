@@ -3,7 +3,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import get_db, require_operator
+from app.models.operator_user import OperatorUser
 from app.schemas.publication import PublicationTaskRead, PublicationTaskWithResults
 from app.schemas.upload import UploadAssetsResponse, UploadAssetRead, UploadListResponse, UploadPipelineSummary, UploadRead, UploadTimelineEvent
 from app.services.uploads import (
@@ -20,7 +21,11 @@ router = APIRouter(prefix="/uploads", tags=["uploads"])
 
 
 @router.get("", response_model=UploadListResponse)
-def get_uploads(limit: int = Query(default=30, ge=1, le=100), db: Session = Depends(get_db)) -> UploadListResponse:
+def get_uploads(
+    limit: int = Query(default=30, ge=1, le=100),
+    db: Session = Depends(get_db),
+    user: OperatorUser = Depends(require_operator),
+) -> UploadListResponse:
     return UploadListResponse(uploads=[UploadRead.model_validate(upload) for upload in list_uploads(db, limit=limit)])
 
 
@@ -31,11 +36,12 @@ async def create_upload(
     notes: str | None = Form(default=None),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    user: OperatorUser = Depends(require_operator),
 ) -> UploadRead:
     upload = await create_upload_with_file(
         db=db,
         project_id=project_id,
-        created_by=created_by,
+        created_by=f"dashboard:{user.username}",
         notes=notes,
         incoming_file=file,
     )
@@ -43,13 +49,17 @@ async def create_upload(
 
 
 @router.get("/{upload_id}", response_model=UploadRead)
-def get_upload(upload_id: UUID, db: Session = Depends(get_db)) -> UploadRead:
+def get_upload(upload_id: UUID, db: Session = Depends(get_db), user: OperatorUser = Depends(require_operator)) -> UploadRead:
     upload = get_upload_or_404(db, upload_id)
     return UploadRead.model_validate(upload)
 
 
 @router.get("/{upload_id}/timeline", response_model=list[UploadTimelineEvent])
-def get_timeline(upload_id: UUID, db: Session = Depends(get_db)) -> list[UploadTimelineEvent]:
+def get_timeline(
+    upload_id: UUID,
+    db: Session = Depends(get_db),
+    user: OperatorUser = Depends(require_operator),
+) -> list[UploadTimelineEvent]:
     upload = get_upload_or_404(db, upload_id)
     if not upload:
         raise HTTPException(status_code=404, detail="Upload not found")
@@ -57,7 +67,12 @@ def get_timeline(upload_id: UUID, db: Session = Depends(get_db)) -> list[UploadT
 
 
 @router.get("/{upload_id}/pipeline", response_model=UploadPipelineSummary)
-def get_pipeline(upload_id: UUID, request: Request, db: Session = Depends(get_db)) -> UploadPipelineSummary:
+def get_pipeline(
+    upload_id: UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: OperatorUser = Depends(require_operator),
+) -> UploadPipelineSummary:
     summary = get_upload_pipeline_summary(db, upload_id)
     assets = [
         UploadAssetRead(
@@ -84,7 +99,12 @@ def get_pipeline(upload_id: UUID, request: Request, db: Session = Depends(get_db
 
 
 @router.get("/{upload_id}/assets", response_model=UploadAssetsResponse)
-def list_assets(upload_id: UUID, request: Request, db: Session = Depends(get_db)) -> UploadAssetsResponse:
+def list_assets(
+    upload_id: UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: OperatorUser = Depends(require_operator),
+) -> UploadAssetsResponse:
     get_upload_or_404(db, upload_id)
     assets = []
     for asset in get_upload_assets(db, upload_id):
@@ -98,7 +118,12 @@ def list_assets(upload_id: UUID, request: Request, db: Session = Depends(get_db)
 
 
 @router.get("/{upload_id}/assets/{asset_id}/download", name="download_upload_asset")
-def download_asset(upload_id: UUID, asset_id: UUID, db: Session = Depends(get_db)) -> Response:
+def download_asset(
+    upload_id: UUID,
+    asset_id: UUID,
+    db: Session = Depends(get_db),
+    user: OperatorUser = Depends(require_operator),
+) -> Response:
     asset, content = get_upload_asset_bytes(db, upload_id, asset_id)
     headers = {"Content-Disposition": f'inline; filename="{asset.file_name}"'}
     return Response(content=content, media_type=asset.mime_type, headers=headers)

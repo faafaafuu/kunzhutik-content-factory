@@ -18,6 +18,7 @@ const els = {
   uploadNotes: document.getElementById("upload-notes"),
   refreshPipeline: document.getElementById("refresh-pipeline"),
   refreshOrders: document.getElementById("refresh-orders"),
+  logoutButton: document.getElementById("logout-button"),
 };
 
 const orderStatuses = ["confirmed", "preparing", "delivering", "completed", "cancelled"];
@@ -26,6 +27,7 @@ init().catch(showFatalError);
 
 async function init() {
   bindChrome();
+  await ensureAuth();
   await Promise.all([loadProjects(), loadUploads(), loadOrders()]);
   if (state.uploads[0]) {
     await selectUpload(state.uploads[0].id);
@@ -41,6 +43,24 @@ function bindChrome() {
   els.refreshPipeline.addEventListener("click", () => refreshPipeline());
   els.refreshOrders.addEventListener("click", () => loadOrders());
   els.uploadForm.addEventListener("submit", handleUpload);
+  els.logoutButton.addEventListener("click", logout);
+}
+
+async function ensureAuth() {
+  const response = await fetch("/api/v1/auth/me", { cache: "no-store" });
+  if (response.status === 401) {
+    window.location.href = "/admin/login";
+    return;
+  }
+  if (!response.ok) {
+    throw new Error(`${response.status} ${response.statusText}`);
+  }
+  return response.json();
+}
+
+async function logout() {
+  await fetch("/api/v1/auth/logout", { method: "POST" });
+  window.location.href = "/admin/login";
 }
 
 function switchTab(tab) {
@@ -344,6 +364,10 @@ function renderOrders(orders) {
 async function requestJson(url, options = {}) {
   const response = await fetch(url, options);
   if (!response.ok) {
+    if (response.status === 401) {
+      window.location.href = "/admin/login";
+      throw new Error("Authentication required");
+    }
     throw new Error(`${response.status} ${response.statusText}`);
   }
   return response.json();
