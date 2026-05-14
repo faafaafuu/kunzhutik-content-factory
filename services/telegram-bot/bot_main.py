@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import hmac
+import json
 import logging
 from urllib.parse import urlencode
 from uuid import UUID
@@ -25,7 +26,7 @@ router = Router()
 
 
 def storefront_url() -> str:
-    return (settings.telegram_approval_base_url or settings.app_base_url).rstrip("/")
+    return f"{(settings.telegram_approval_base_url or settings.app_base_url).rstrip('/')}/tg"
 
 
 def storefront_keyboard(user=None) -> InlineKeyboardMarkup:
@@ -33,9 +34,9 @@ def storefront_keyboard(user=None) -> InlineKeyboardMarkup:
     if user:
         url = _with_signed_telegram_profile(url, user)
     if url.startswith("https://"):
-        button = InlineKeyboardButton(text="Открыть заказ", web_app=WebAppInfo(url=url))
+        button = InlineKeyboardButton(text="Открыть заказ в Telegram", web_app=WebAppInfo(url=url))
     else:
-        button = InlineKeyboardButton(text="Открыть сайт", url=url)
+        button = InlineKeyboardButton(text="Открыть заказ", url=url)
     return InlineKeyboardMarkup(inline_keyboard=[[button]])
 
 
@@ -61,14 +62,11 @@ async def reject_if_forbidden(message: Message | None = None, callback: Callback
 
 @router.message(CommandStart())
 async def start(message: Message) -> None:
-    if await reject_if_forbidden(message=message):
-        return
-
     mode = "открытый многопользовательский режим" if settings.telegram_open_access else "режим фиксированного approval-чата"
     await message.answer(
         f"{BUSINESS_PROFILE['brand_name']} bot активен.\n"
         f"Режим: {mode}.\n"
-        "Команды: /menu, /contacts, /orders, /pending.\n"
+        "Команды: /menu, /contacts.\n"
         "Нажмите кнопку ниже, чтобы открыть меню и оформить заказ.",
         reply_markup=storefront_keyboard(message.from_user),
     )
@@ -76,9 +74,6 @@ async def start(message: Message) -> None:
 
 @router.message(F.text == "/contacts")
 async def contacts(message: Message) -> None:
-    if await reject_if_forbidden(message=message):
-        return
-
     await message.answer(
         f"{BUSINESS_PROFILE['brand_name']}\n"
         f"{BUSINESS_PROFILE['city']}, {BUSINESS_PROFILE['address']}\n"
@@ -92,9 +87,6 @@ async def contacts(message: Message) -> None:
 
 @router.message(F.text == "/menu")
 async def menu(message: Message) -> None:
-    if await reject_if_forbidden(message=message):
-        return
-
     category_titles = {category["id"]: category["title"] for category in CATEGORIES}
     lines = [f"Меню {BUSINESS_PROFILE['brand_name']}:"]
     for category in CATEGORIES[:6]:
@@ -135,6 +127,16 @@ async def orders(message: Message) -> None:
             )
     finally:
         db.close()
+
+
+@router.message(F.web_app_data)
+async def web_app_data(message: Message) -> None:
+    try:
+        payload = json.loads(message.web_app_data.data)
+    except (TypeError, json.JSONDecodeError):
+        return
+    if payload.get("type") == "store_order_created" and payload.get("order_number"):
+        await message.answer(f"Заказ {payload['order_number']} принят. Кунжутик уже передал его оператору.")
 
 
 def _with_signed_telegram_profile(url: str, user) -> str:

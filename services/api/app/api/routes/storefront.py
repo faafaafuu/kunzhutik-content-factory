@@ -26,6 +26,11 @@ def storefront_home() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@router.get("/tg", response_class=HTMLResponse, include_in_schema=False)
+def telegram_storefront() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
+
+
 @router.get("/admin/orders", response_class=HTMLResponse, include_in_schema=False)
 def storefront_admin() -> FileResponse:
     return FileResponse(STATIC_DIR / "admin.html")

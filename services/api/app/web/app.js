@@ -50,6 +50,7 @@ bootstrap().catch((error) => {
 });
 
 async function bootstrap() {
+  setupTelegramShell();
   const response = await fetch("/api/v1/store/menu", { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`Menu request failed: ${response.status}`);
@@ -66,6 +67,13 @@ async function bootstrap() {
   renderMenu();
   renderCart();
   bindEvents();
+}
+
+function setupTelegramShell() {
+  if (isTelegramMode()) {
+    document.documentElement.classList.add("telegram-mode");
+    document.body.classList.add("telegram-mode");
+  }
 }
 
 function bindEvents() {
@@ -108,7 +116,25 @@ function setupTelegramTheme() {
   }
   window.Telegram.WebApp.ready();
   window.Telegram.WebApp.expand();
+  applyTelegramThemeParams();
   prefillTelegramUser({ silent: true });
+}
+
+function applyTelegramThemeParams() {
+  const webApp = window.Telegram?.WebApp;
+  const theme = webApp?.themeParams || {};
+  if (theme.bg_color) {
+    document.documentElement.style.setProperty("--tg-bg", theme.bg_color);
+  }
+  if (theme.text_color) {
+    document.documentElement.style.setProperty("--tg-text", theme.text_color);
+  }
+  if (theme.button_color) {
+    document.documentElement.style.setProperty("--tg-button", theme.button_color);
+  }
+  if (theme.button_text_color) {
+    document.documentElement.style.setProperty("--tg-button-text", theme.button_text_color);
+  }
 }
 
 function renderTopnav() {
@@ -419,6 +445,7 @@ async function submitOrder(event) {
       window.Telegram.WebApp.HapticFeedback?.notificationOccurred("success");
       window.Telegram.WebApp.MainButton.setText(`Заказ ${result.order_number} принят`);
       window.Telegram.WebApp.MainButton.show();
+      window.Telegram.WebApp.sendData?.(JSON.stringify({ type: "store_order_created", order_number: result.order_number }));
     }
   } catch (error) {
     console.error(error);
@@ -459,6 +486,10 @@ function getCustomerProfile() {
 
 function getTelegramProfile() {
   return getTelegramWebAppProfile() || getTelegramLinkProfile();
+}
+
+function isTelegramMode() {
+  return window.location.pathname === "/tg" || Boolean(window.Telegram?.WebApp?.initData);
 }
 
 function getTelegramWebAppProfile() {

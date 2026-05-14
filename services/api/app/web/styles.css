@@ -23,6 +23,10 @@
   --radius-md: 16px;
   --radius-lg: 24px;
   --max: 1200px;
+  --tg-bg: #10100f;
+  --tg-text: #fff6ea;
+  --tg-button: #ff7a2f;
+  --tg-button-text: #ffffff;
 }
 
 * {
@@ -1034,6 +1038,155 @@ h3 {
 
 .drawer-backdrop[hidden] {
   display: none;
+}
+
+.telegram-mode body,
+body.telegram-mode {
+  color: var(--tg-text);
+  background:
+    radial-gradient(circle at 24% -12%, rgba(255, 122, 47, 0.25), transparent 20rem),
+    radial-gradient(circle at 92% 6%, rgba(75, 192, 141, 0.16), transparent 18rem),
+    linear-gradient(180deg, var(--tg-bg), #0c0c0b 100%);
+}
+
+body.telegram-mode .site-shell {
+  width: min(calc(100% - 18px), 640px);
+  padding-top: 8px;
+  padding-bottom: 128px;
+}
+
+body.telegram-mode .topbar {
+  min-height: 58px;
+  grid-template-columns: 1fr auto;
+  border-bottom: 0;
+  background: rgba(16, 16, 15, 0.56);
+}
+
+body.telegram-mode .topnav,
+body.telegram-mode .footer,
+body.telegram-mode .hero-actions .button-secondary,
+body.telegram-mode .hero-visual {
+  display: none;
+}
+
+body.telegram-mode .cart-button {
+  min-width: 50px;
+  width: 50px;
+  padding: 0;
+  background: var(--tg-button);
+  color: var(--tg-button-text);
+}
+
+body.telegram-mode .cart-button::after {
+  content: "";
+}
+
+body.telegram-mode .hero {
+  min-height: auto;
+  margin-top: 8px;
+  padding: 18px;
+  grid-template-columns: 1fr;
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(255, 122, 47, 0.24), rgba(75, 192, 141, 0.13)),
+    rgba(255, 246, 234, 0.07);
+}
+
+body.telegram-mode h1 {
+  font-size: clamp(2rem, 9vw, 3rem);
+}
+
+body.telegram-mode .hero-text,
+body.telegram-mode .section-note {
+  font-size: 1rem;
+}
+
+body.telegram-mode .quick-info {
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+body.telegram-mode .quick-info article {
+  min-height: auto;
+  padding: 14px;
+}
+
+body.telegram-mode .menu-section {
+  margin-top: 16px;
+}
+
+body.telegram-mode .section-head {
+  display: block;
+  margin-bottom: 12px;
+}
+
+body.telegram-mode .category-tabs {
+  top: 58px;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 6px 0;
+}
+
+body.telegram-mode .category-tabs button {
+  padding: 10px 12px;
+}
+
+body.telegram-mode .menu-group-grid {
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+body.telegram-mode .menu-card {
+  min-height: 154px;
+  grid-template-columns: 112px minmax(0, 1fr);
+  padding: 12px;
+  border-radius: 22px;
+}
+
+body.telegram-mode .menu-art {
+  min-height: 128px;
+}
+
+body.telegram-mode .menu-copy p {
+  display: none;
+}
+
+body.telegram-mode .menu-footer {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+body.telegram-mode .add-button,
+body.telegram-mode .button-primary {
+  width: 100%;
+  background: var(--tg-button);
+  color: var(--tg-button-text);
+}
+
+body.telegram-mode .cart-bar {
+  width: min(calc(100% - 18px), 640px);
+  bottom: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  border-radius: 22px;
+}
+
+body.telegram-mode .cart-drawer {
+  width: 100%;
+  max-width: 640px;
+  border-radius: 24px 24px 0 0;
+  inset: auto 0 0 auto;
+  max-height: 92vh;
+  transform: translateY(110%);
+}
+
+body.telegram-mode .cart-drawer.open {
+  transform: translateY(0);
+}
+
+body.telegram-mode .auth-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 @media (max-width: 1100px) {
