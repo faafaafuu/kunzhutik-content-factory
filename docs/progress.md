@@ -6,7 +6,7 @@ Working vertical slice is preserved:
 
 `Upload -> MediaAsset -> AnalysisResult -> ContentDraft -> VoiceAsset / VideoAsset -> ApprovalTask -> PublicationTask -> PublicationResult`
 
-Current step: Stage 5 complete, video render provider architecture.
+Current step: Stage 6 complete, publishing provider architecture.
 
 ## Done
 
@@ -30,14 +30,17 @@ Current step: Stage 5 complete, video render provider architecture.
 - Added regenerate endpoint for a single video asset.
 - Pipeline smoke in `VIDEO_PROVIDER=ffmpeg`: upload reached `needs_review`, created `3` drafts, `3` voice assets, `3` video assets, and `3` preview assets.
 - Regenerate video smoke passed: created a new `VideoAsset`, new video `MediaAsset`, and new preview asset through `ffmpeg`.
+- Publishing provider architecture with mock publisher, VK adapter, Instagram manual package provider, and Yandex Maps manual package provider.
+- Publication smoke in `PUBLISHER_PROVIDER=mock`: approval created `3` publication tasks and a run completed with `PublicationResult.status=published`.
 
 ## In Progress
 
-- Stage 6 planning.
+- Next stage planning.
 
 ## Next
 
-- Stage 6: publishing provider architecture.
+- Dashboard/provider visibility polish.
+- Real VK media upload support for photos/videos.
 
 ## Blockers
 
@@ -47,6 +50,7 @@ Current step: Stage 5 complete, video render provider architecture.
 - Real ElevenLabs TTS requires `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID`.
 - Real Yandex SpeechKit TTS requires `YANDEX_SPEECHKIT_API_KEY` and `YANDEX_SPEECHKIT_FOLDER_ID`.
 - Real Creatomate rendering requires `CREATOMATE_API_KEY` and template ids.
+- Real VK publishing requires `VK_ACCESS_TOKEN` and `VK_GROUP_ID`.
 
 ## Changelog
 
@@ -67,3 +71,5 @@ Current step: Stage 5 complete, video render provider architecture.
 - 2026-05-15: Added `POST /api/v1/video-assets/{video_asset_id}/regenerate`.
 - 2026-05-15: Verified Docker rebuild, Alembic upgrade, health check, video-provider upload pipeline smoke, and video regeneration smoke.
 - 2026-05-15: Stage 5 local commit created, push still blocked by missing GitHub token.
+- 2026-05-15: Added publishing provider package and provider-backed publication worker flow.
+- 2026-05-15: Verified Docker rebuild, Alembic upgrade, health check, approval-to-publication task creation, and mock publication run.

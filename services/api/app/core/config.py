@@ -67,6 +67,12 @@ class Settings(BaseSettings):
     creatomate_template_9_16: str | None = Field(default=None, alias="CREATOMATE_TEMPLATE_9_16")
     creatomate_template_1_1: str | None = Field(default=None, alias="CREATOMATE_TEMPLATE_1_1")
 
+    publisher_provider: str = Field(default="mock", alias="PUBLISHER_PROVIDER")
+    publisher_timeout_seconds: float = Field(default=60.0, alias="PUBLISHER_TIMEOUT_SECONDS")
+    vk_access_token: str | None = Field(default=None, alias="VK_ACCESS_TOKEN")
+    vk_group_id: str | None = Field(default=None, alias="VK_GROUP_ID")
+    vk_api_version: str = Field(default="5.199", alias="VK_API_VERSION")
+
     default_project_slug: str = Field(default="kunzhutik-food", alias="DEFAULT_PROJECT_SLUG")
     default_project_name: str = Field(default="Kunzhutik Food Lab", alias="DEFAULT_PROJECT_NAME")
     default_character_name: str = Field(default="Кунжутик", alias="DEFAULT_CHARACTER_NAME")

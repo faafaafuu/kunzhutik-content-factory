@@ -57,6 +57,7 @@
 - platform adapters
 - idempotent publish attempts
 - result capture and audit trail
+- provider interface with mock publisher, VK wall-post adapter, and manual packages for Instagram/Yandex Maps
 
 ## Data Lifecycle
 
@@ -79,3 +80,4 @@ Current provider packages:
 - `app.providers.text_generation`: `mock` and `openrouter`
 - `app.providers.tts`: `mock/espeak-ng`, `elevenlabs`, and `yandex_speechkit`
 - `app.providers.video_render`: `ffmpeg` and `creatomate`
+- `app.providers.publishing`: `mock`, `vk`, `instagram_manual`, `yandex_manual`

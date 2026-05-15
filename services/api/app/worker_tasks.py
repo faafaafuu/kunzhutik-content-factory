@@ -20,7 +20,7 @@ from app.models.upload import Upload
 from app.services.audit import log_event
 from app.services.content_generation import build_persona_drafts
 from app.services.media_generation import generate_media_assets_for_drafts
-from app.services.publications import publish_task_with_mock_adapter
+from app.services.publications import publish_task_with_provider
 from app.services.vision_analysis import analyze_upload_with_configured_provider
 from shared.enums import ApprovalStatus, PipelineStatus
 
@@ -194,7 +194,7 @@ def dispatch_approval_preview(approval_task_id: str) -> None:
 def publish_publication_task(publication_task_id: str) -> None:
     db: Session = SessionLocal()
     try:
-        publish_task_with_mock_adapter(db, UUID(publication_task_id))
+        publish_task_with_provider(db, UUID(publication_task_id))
     finally:
         db.close()
 
