@@ -47,6 +47,7 @@ class UploadAssetRead(BaseModel):
     platform: str | None = None
     voice_asset_id: UUID | None = None
     video_asset_id: UUID | None = None
+    metadata_json: dict
     download_url: str
 
 

@@ -6,7 +6,7 @@ Working vertical slice is preserved:
 
 `Upload -> MediaAsset -> AnalysisResult -> ContentDraft -> VoiceAsset / VideoAsset -> ApprovalTask -> PublicationTask -> PublicationResult`
 
-Current step: Stage 6 complete, publishing provider architecture.
+Current step: Stage 7 complete, dashboard/provider visibility polish.
 
 ## Done
 
@@ -32,6 +32,7 @@ Current step: Stage 6 complete, publishing provider architecture.
 - Regenerate video smoke passed: created a new `VideoAsset`, new video `MediaAsset`, and new preview asset through `ffmpeg`.
 - Publishing provider architecture with mock publisher, VK adapter, Instagram manual package provider, and Yandex Maps manual package provider.
 - Publication smoke in `PUBLISHER_PROVIDER=mock`: approval created `3` publication tasks and a run completed with `PublicationResult.status=published`.
+- Dashboard provider visibility: pipeline assets now expose `metadata_json`, and admin cards show provider/fallback/error/manual-package details.
 
 ## In Progress
 
@@ -39,8 +40,8 @@ Current step: Stage 6 complete, publishing provider architecture.
 
 ## Next
 
-- Dashboard/provider visibility polish.
 - Real VK media upload support for photos/videos.
+- Provider health/config diagnostics endpoint.
 
 ## Blockers
 
@@ -74,3 +75,5 @@ Current step: Stage 6 complete, publishing provider architecture.
 - 2026-05-15: Added publishing provider package and provider-backed publication worker flow.
 - 2026-05-15: Verified Docker rebuild, Alembic upgrade, health check, approval-to-publication task creation, and mock publication run.
 - 2026-05-15: Stage 6 local commit created, push still blocked by missing GitHub token.
+- 2026-05-16: Added dashboard provider/fallback visibility for analysis, drafts, assets, and publications.
+- 2026-05-16: Verified Python compile, admin JavaScript syntax, Docker API rebuild, Alembic upgrade, health check, static admin JS, and pipeline metadata exposure.

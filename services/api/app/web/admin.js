@@ -202,6 +202,7 @@ function renderAnalysis(results) {
   return `
     <p class="eyebrow">Vision Analysis</p>
     <h3>${escapeHtml(latest.dish_name || "Без названия")}</h3>
+    <span class="pill">${escapeHtml(latest.provider || "unknown-provider")}</span>
     <p class="muted">${escapeHtml(latest.visual_mood || "")} / ${escapeHtml(latest.plating_style || "")}</p>
     <p>${latest.ingredients.map(escapeHtml).join(", ")}</p>
   `;
@@ -228,6 +229,8 @@ function renderDrafts(drafts) {
           (draft) => `
             <div class="draft-card">
               <span class="pill">${escapeHtml(draft.platform)} / ${escapeHtml(draft.kind)}</span>
+              <span class="pill">v${draft.version}</span>
+              ${draft.metadata_json?.provider ? `<span class="pill">${escapeHtml(draft.metadata_json.provider)}</span>` : ""}
               <h3>${escapeHtml(draft.title || draft.platform)}</h3>
               <p>${escapeHtml(draft.caption)}</p>
               <p class="muted">${escapeHtml(draft.cta || "")}</p>
@@ -245,18 +248,25 @@ function renderPublications(tasks) {
     <p class="eyebrow">Publication Tasks</p>
     <div class="publication-grid">
       ${tasks
-        .map(
-          (task) => `
+        .map((task) => {
+          const result = task.results.at(-1);
+          const provider = result?.payload?.provider || result?.payload?.adapter || "not-run";
+          const fallback = result?.payload?.fallback_reason;
+          const isManualPackage = result?.payload?.mode === "manual_package";
+          return `
             <div class="publication-card">
               <span class="pill ${task.status === "published" ? "good" : "warn"}">${escapeHtml(task.platform)} / ${escapeHtml(task.status)}</span>
+              <span class="pill">${escapeHtml(provider)}</span>
               <p class="muted">Attempts: ${task.attempt_count}</p>
-              ${task.results.length ? `<a class="button" href="${escapeAttr(task.results.at(-1).remote_url)}" target="_blank" rel="noreferrer">Remote URL</a>` : ""}
+              ${fallback ? `<p class="muted">Fallback: ${escapeHtml(fallback)}</p>` : ""}
+              ${result?.error_message ? `<p class="muted">Error: ${escapeHtml(result.error_message)}</p>` : ""}
+              ${result?.remote_url ? `<a class="button" href="${escapeAttr(result.remote_url)}" target="_blank" rel="noreferrer">${isManualPackage ? "Manual package" : "Remote URL"}</a>` : ""}
               <div class="card-actions">
                 <button type="button" data-publication-id="${task.id}" ${task.status === "published" ? "disabled" : ""}>Run publish</button>
               </div>
             </div>
-          `,
-        )
+          `;
+        })
         .join("")}
     </div>
   `;
@@ -272,6 +282,8 @@ function renderAssets(assets) {
           (asset) => `
             <div class="asset-card">
               <span class="pill">${escapeHtml(asset.kind)}</span>
+              ${asset.metadata_json?.provider ? `<span class="pill">${escapeHtml(asset.metadata_json.provider)}</span>` : ""}
+              ${asset.metadata_json?.requested_provider ? `<span class="pill">fallback from ${escapeHtml(asset.metadata_json.requested_provider)}</span>` : ""}
               <h3>${escapeHtml(asset.file_name)}</h3>
               <p class="muted">${escapeHtml(asset.platform || "source")} ${asset.duration_seconds ? `/ ${asset.duration_seconds}s` : ""}</p>
               <a class="button" href="${escapeAttr(asset.download_url)}" target="_blank" rel="noreferrer">Открыть</a>

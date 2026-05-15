@@ -178,6 +178,7 @@ def get_upload_assets(db: Session, upload_id: UUID) -> list[dict]:
                 "platform": relation.get("platform"),
                 "voice_asset_id": relation.get("voice_asset_id"),
                 "video_asset_id": relation.get("video_asset_id"),
+                "metadata_json": asset.metadata_json or {},
             }
         )
     return result
