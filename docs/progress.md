@@ -6,7 +6,7 @@ Working vertical slice is preserved:
 
 `Upload -> MediaAsset -> AnalysisResult -> ContentDraft -> VoiceAsset / VideoAsset -> ApprovalTask -> PublicationTask -> PublicationResult`
 
-Current step: Stage 4 in progress, production TTS provider architecture.
+Current step: Stage 5 complete, video render provider architecture.
 
 ## Done
 
@@ -26,14 +26,18 @@ Current step: Stage 4 in progress, production TTS provider architecture.
 - Added regenerate endpoint for a single voice asset.
 - Pipeline smoke in `TTS_PROVIDER=mock`: upload reached `needs_review`, created `3` voice assets and `10` total assets.
 - Regenerate voice smoke passed: created a new `VoiceAsset` and `MediaAsset` through `espeak-ng`.
+- Video render provider architecture with ffmpeg fallback and Creatomate implementation.
+- Added regenerate endpoint for a single video asset.
+- Pipeline smoke in `VIDEO_PROVIDER=ffmpeg`: upload reached `needs_review`, created `3` drafts, `3` voice assets, `3` video assets, and `3` preview assets.
+- Regenerate video smoke passed: created a new `VideoAsset`, new video `MediaAsset`, and new preview asset through `ffmpeg`.
 
 ## In Progress
 
-- Commit and push for Stage 4.
+- Stage 6 planning.
 
 ## Next
 
-- Stage 5: video render provider architecture.
+- Stage 6: publishing provider architecture.
 
 ## Blockers
 
@@ -42,6 +46,7 @@ Current step: Stage 4 in progress, production TTS provider architecture.
 - Real OpenRouter text generation requires `OPENROUTER_API_KEY` and `OPENROUTER_TEXT_MODEL`.
 - Real ElevenLabs TTS requires `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID`.
 - Real Yandex SpeechKit TTS requires `YANDEX_SPEECHKIT_API_KEY` and `YANDEX_SPEECHKIT_FOLDER_ID`.
+- Real Creatomate rendering requires `CREATOMATE_API_KEY` and template ids.
 
 ## Changelog
 
@@ -58,3 +63,6 @@ Current step: Stage 4 in progress, production TTS provider architecture.
 - 2026-05-15: Added `POST /api/v1/voice-assets/{voice_asset_id}/regenerate`.
 - 2026-05-15: Verified TTS pipeline smoke and voice regeneration smoke.
 - 2026-05-15: Stage 4 local commit created, push still blocked by missing GitHub token.
+- 2026-05-15: Added video render provider package and provider-backed ffmpeg rendering.
+- 2026-05-15: Added `POST /api/v1/video-assets/{video_asset_id}/regenerate`.
+- 2026-05-15: Verified Docker rebuild, Alembic upgrade, health check, video-provider upload pipeline smoke, and video regeneration smoke.

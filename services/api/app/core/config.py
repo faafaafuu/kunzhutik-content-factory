@@ -61,6 +61,12 @@ class Settings(BaseSettings):
     yandex_speechkit_folder_id: str | None = Field(default=None, alias="YANDEX_SPEECHKIT_FOLDER_ID")
     yandex_speechkit_voice: str = Field(default="alena", alias="YANDEX_SPEECHKIT_VOICE")
 
+    video_provider: str = Field(default="ffmpeg", alias="VIDEO_PROVIDER")
+    video_render_timeout_seconds: float = Field(default=120.0, alias="VIDEO_RENDER_TIMEOUT_SECONDS")
+    creatomate_api_key: str | None = Field(default=None, alias="CREATOMATE_API_KEY")
+    creatomate_template_9_16: str | None = Field(default=None, alias="CREATOMATE_TEMPLATE_9_16")
+    creatomate_template_1_1: str | None = Field(default=None, alias="CREATOMATE_TEMPLATE_1_1")
+
     default_project_slug: str = Field(default="kunzhutik-food", alias="DEFAULT_PROJECT_SLUG")
     default_project_name: str = Field(default="Kunzhutik Food Lab", alias="DEFAULT_PROJECT_NAME")
     default_character_name: str = Field(default="Кунжутик", alias="DEFAULT_CHARACTER_NAME")

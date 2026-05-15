@@ -38,6 +38,7 @@
 - layout templates
 - mascot overlay
 - aspect-ratio exports
+- provider interface with ffmpeg fallback and Creatomate adapter
 
 ### Voice
 
@@ -77,3 +78,4 @@ Current provider packages:
 - `app.providers.vision`: `mock` and `openrouter`
 - `app.providers.text_generation`: `mock` and `openrouter`
 - `app.providers.tts`: `mock/espeak-ng`, `elevenlabs`, and `yandex_speechkit`
+- `app.providers.video_render`: `ffmpeg` and `creatomate`

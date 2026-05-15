@@ -8,6 +8,7 @@ from decimal import Decimal
 from pathlib import Path
 from uuid import uuid4
 
+import httpx
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -18,61 +19,14 @@ from app.models.video_asset import VideoAsset
 from app.models.voice_asset import VoiceAsset
 from app.providers.tts.factory import get_tts_provider
 from app.providers.tts.schemas import TTSResult
+from app.providers.video_render.factory import get_video_render_provider
+from app.providers.video_render.ffmpeg_fallback import VIDEO_HEIGHT, VIDEO_WIDTH, get_template_preset
+from app.providers.video_render.schemas import RenderContent
 from app.services.audit import log_event
 from app.services.storage import download_bytes, upload_bytes
 from shared.enums import AssetKind, PipelineStatus
 
-FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-VIDEO_WIDTH = 720
-VIDEO_HEIGHT = 1280
-VIDEO_FPS = 24
 VOICE_NAME = "ru"
-MASCOT_ASSET_PATH = Path(__file__).resolve().parents[1] / "web" / "assets" / "kunzhutik-mascot.svg"
-
-TEMPLATE_PRESETS = {
-    "post": {
-        "template_name": "mascot_reel_menu_v2",
-        "background": "#4b2416",
-        "top_box": "drawbox=x=28:y=34:w=664:h=170:color=#2b120d@0.58:t=fill",
-        "bottom_box": "drawbox=x=28:y=980:w=664:h=228:color=#1f0f0b@0.48:t=fill",
-        "title_size": 38,
-        "subtitle_size": 31,
-        "title_y": 110,
-        "subtitle_y": 1060,
-        "mascot_scale": 230,
-        "mascot_x": "W-w-26",
-        "mascot_y": "H-h-356+20*sin(2*PI*t/3)",
-        "cta_label": "Рилс / хедлайн",
-    },
-    "story": {
-        "template_name": "mascot_story_flash_v2",
-        "background": "#663119",
-        "top_box": "drawbox=x=34:y=52:w=652:h=148:color=#ffffff@0.14:t=fill",
-        "bottom_box": "drawbox=x=34:y=1002:w=652:h=194:color=#f5dfc0@0.18:t=fill",
-        "title_size": 42,
-        "subtitle_size": 30,
-        "title_y": 102,
-        "subtitle_y": 1052,
-        "mascot_scale": 250,
-        "mascot_x": "W-w-14",
-        "mascot_y": "H-h-216+12*sin(2*PI*t/2.4)",
-        "cta_label": "Story / call to action",
-    },
-    "news": {
-        "template_name": "mascot_local_news_v2",
-        "background": "#203a43",
-        "top_box": "drawbox=x=24:y=44:w=672:h=182:color=#09141c@0.52:t=fill",
-        "bottom_box": "drawbox=x=24:y=950:w=672:h=248:color=#081018@0.54:t=fill",
-        "title_size": 36,
-        "subtitle_size": 29,
-        "title_y": 118,
-        "subtitle_y": 1024,
-        "mascot_scale": 208,
-        "mascot_x": "36",
-        "mascot_y": "H-h-304+14*sin(2*PI*t/4.2)",
-        "cta_label": "Local / maps news",
-    },
-}
 
 
 def generate_media_assets_for_drafts(db: Session, upload: Upload, drafts: list[ContentDraft]) -> None:
@@ -86,8 +40,6 @@ def generate_media_assets_for_drafts(db: Session, upload: Upload, drafts: list[C
         with tempfile.TemporaryDirectory(prefix="kunzhutik-render-") as tmp_dir_name:
             tmp_dir = Path(tmp_dir_name)
             voice_path = tmp_dir / "voice.wav"
-            video_path = tmp_dir / "video.mp4"
-            preview_path = tmp_dir / "preview.jpg"
             source_path = None
 
             if source_bytes and _looks_like_supported_image(source_bytes):
@@ -99,24 +51,16 @@ def generate_media_assets_for_drafts(db: Session, upload: Upload, drafts: list[C
             voice_path = _write_tts_result(tts_result, tmp_dir)
             duration_seconds = _tts_duration_seconds(tts_result, voice_path)
 
-            try:
-                _render_vertical_video(
-                    draft=draft,
-                    source_path=source_path,
-                    audio_path=voice_path,
-                    output_path=video_path,
-                    duration_seconds=duration_seconds,
-                )
-            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-                _render_vertical_video(
-                    draft=draft,
-                    source_path=None,
-                    audio_path=voice_path,
-                    output_path=video_path,
-                    duration_seconds=duration_seconds,
-                )
-
-            _render_preview_frame(video_path, preview_path)
+            render_result = get_video_render_provider().render(
+                source_image_url=str(source_path) if source_path else None,
+                voice_asset_url=str(voice_path),
+                content=_render_content_from_draft(draft),
+                format="9:16",
+                template_key=_get_template_preset(draft)["template_name"],
+                context={"duration_seconds": str(duration_seconds)},
+            )
+            video_path = _write_render_output(render_result.video_bytes, render_result.video_url, tmp_dir / "video.mp4")
+            preview_path = _write_render_output(render_result.preview_bytes, render_result.preview_url, tmp_dir / "preview.jpg")
 
             voice_media = _create_media_asset(
                 db=db,
@@ -154,6 +98,7 @@ def generate_media_assets_for_drafts(db: Session, upload: Upload, drafts: list[C
                 height=VIDEO_HEIGHT,
                 duration_seconds=duration_seconds,
                 metadata={
+                    **render_result.raw_response,
                     "template_name": _get_template_preset(draft)["template_name"],
                     "platform": draft.platform.value,
                     "draft_kind": draft.kind.value,
@@ -169,7 +114,7 @@ def generate_media_assets_for_drafts(db: Session, upload: Upload, drafts: list[C
                 mime_type="image/jpeg",
                 width=VIDEO_WIDTH,
                 height=VIDEO_HEIGHT,
-                metadata={"template_name": _get_template_preset(draft)["template_name"], "source": "video_first_frame"},
+                metadata={**render_result.raw_response, "template_name": _get_template_preset(draft)["template_name"], "source": "video_first_frame"},
             )
             video_asset = VideoAsset(
                 project_id=upload.project_id,
@@ -265,119 +210,33 @@ def _audio_suffix(mime_type: str) -> str:
     return ".wav"
 
 
-def _render_vertical_video(
-    draft: ContentDraft,
-    source_path: Path | None,
-    audio_path: Path,
-    output_path: Path,
-    duration_seconds: Decimal,
-) -> None:
-    preset = _get_template_preset(draft)
-    mascot_text = _escape_drawtext("Кунжутик")
-    title_text = _escape_drawtext((draft.title or draft.caption).strip()[:72])
-    subtitle_text = _escape_drawtext((draft.cta or draft.short_text or draft.caption).strip()[:88])
-    subtitle_color = "white" if draft.kind.value != "story" else "#27140d"
-    draw_filters = ",".join(
-        [
-            preset["top_box"],
-            preset["bottom_box"],
-            f"drawtext=fontfile={FONT_PATH}:text='{mascot_text}':fontcolor=white:fontsize=40:x=54:y=62",
-            f"drawtext=fontfile={FONT_PATH}:text='{_escape_drawtext(preset['cta_label'])}':fontcolor=#ffd08a:fontsize=24:x=54:y=88",
-            f"drawtext=fontfile={FONT_PATH}:text='{title_text}':fontcolor=white:fontsize={preset['title_size']}:x=54:y={preset['title_y']}",
-            f"drawtext=fontfile={FONT_PATH}:text='{subtitle_text}':fontcolor={subtitle_color}:fontsize={preset['subtitle_size']}:x=54:y={preset['subtitle_y']}",
-        ]
-    )
-
-    if source_path and source_path.exists():
-        input_args = [
-            "-loop",
-            "1",
-            "-i",
-            str(source_path),
-            "-loop",
-            "1",
-            "-i",
-            str(MASCOT_ASSET_PATH),
-        ]
-        video_filter = (
-            f"[0:v]scale={VIDEO_WIDTH}:{VIDEO_HEIGHT}:force_original_aspect_ratio=increase,"
-            f"crop={VIDEO_WIDTH}:{VIDEO_HEIGHT},zoompan=z='min(zoom+0.0009,1.12)':x='iw/2-(iw/zoom/2)':"
-            f"y='ih/2-(ih/zoom/2)':d=1:s={VIDEO_WIDTH}x{VIDEO_HEIGHT}:fps={VIDEO_FPS},setsar=1,format=yuv420p[bg];"
-            f"[1:v]scale={preset['mascot_scale']}:-1,format=rgba,colorchannelmixer=aa=0.96[mascot];"
-            f"[bg][mascot]overlay=x={preset['mascot_x']}:y={preset['mascot_y']}[composed];"
-            f"[composed]{draw_filters}[v]"
-        )
-        audio_map = "2:a"
-    else:
-        input_args = [
-            "-f",
-            "lavfi",
-            "-i",
-            f"color=c={preset['background']}:s={VIDEO_WIDTH}x{VIDEO_HEIGHT}:r={VIDEO_FPS}",
-            "-loop",
-            "1",
-            "-i",
-            str(MASCOT_ASSET_PATH),
-        ]
-        video_filter = (
-            f"[0:v]format=yuv420p[bg];"
-            f"[1:v]scale={preset['mascot_scale']}:-1,format=rgba,colorchannelmixer=aa=0.98[mascot];"
-            f"[bg][mascot]overlay=x={preset['mascot_x']}:y={preset['mascot_y']}[composed];"
-            f"[composed]{draw_filters}[v]"
-        )
-        audio_map = "2:a"
-
-    subprocess.run(
-        [
-            "ffmpeg",
-            "-y",
-            *input_args,
-            "-i",
-            str(audio_path),
-            "-filter_complex",
-            video_filter,
-            "-map",
-            "[v]",
-            "-map",
-            audio_map,
-            "-t",
-            str(duration_seconds),
-            "-r",
-            str(VIDEO_FPS),
-            "-c:v",
-            "libx264",
-            "-preset",
-            "veryfast",
-            "-pix_fmt",
-            "yuv420p",
-            "-c:a",
-            "aac",
-            "-shortest",
-            str(output_path),
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=60,
+def _render_content_from_draft(draft: ContentDraft) -> RenderContent:
+    return RenderContent(
+        title=(draft.title or draft.caption).strip(),
+        subtitle=(draft.cta or draft.short_text or draft.caption).strip(),
+        platform=draft.platform.value,
+        kind=draft.kind.value,
     )
 
 
-def _render_preview_frame(video_path: Path, preview_path: Path) -> None:
-    subprocess.run(
-        [
-            "ffmpeg",
-            "-y",
-            "-i",
-            str(video_path),
-            "-frames:v",
-            "1",
-            str(preview_path),
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=20,
-    )
+def _write_render_output(content: bytes | None, source_url: str | None, output_path: Path) -> Path:
+    if content:
+        output_path.write_bytes(content)
+        return output_path
+    if source_url:
+        with httpx.Client(timeout=settings.video_render_timeout_seconds) as client:
+            response = client.get(source_url)
+            response.raise_for_status()
+            output_path.write_bytes(response.content)
+            return output_path
+    raise ValueError("Video render provider did not return required bytes or URL")
+
+
+def _write_render_bytes(content: bytes | None, output_path: Path) -> Path:
+    if not content:
+        raise ValueError("Video render provider did not return required bytes")
+    output_path.write_bytes(content)
+    return output_path
 
 
 def _read_wav_duration_seconds(file_path: Path) -> Decimal:
@@ -410,17 +269,6 @@ def _probe_audio_duration_seconds(file_path: Path) -> Decimal:
     return Decimal(result.stdout.strip() or "0").quantize(Decimal("0.01"))
 
 
-def _escape_drawtext(value: str) -> str:
-    return (
-        value.replace("\\", r"\\")
-        .replace(":", r"\:")
-        .replace(",", r"\,")
-        .replace("'", r"\'")
-        .replace("%", r"\%")
-        .replace("\n", r"\n")
-    )
-
-
 def _looks_like_supported_image(content: bytes) -> bool:
     return any(
         content.startswith(signature)
@@ -435,4 +283,4 @@ def _looks_like_supported_image(content: bytes) -> bool:
 
 
 def _get_template_preset(draft: ContentDraft) -> dict:
-    return TEMPLATE_PRESETS.get(draft.kind.value, TEMPLATE_PRESETS["story"])
+    return get_template_preset(draft.kind.value)
