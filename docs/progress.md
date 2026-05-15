@@ -44,7 +44,7 @@ Current step: Stage 6 complete, publishing provider architecture.
 
 ## Blockers
 
-- Push blocked: missing GitHub token in the non-interactive environment. `git push` failed because GitHub requested a password after Stage 1, Stage 2, Stage 3, Stage 4, and Stage 5 commits.
+- Push blocked: missing GitHub token in the non-interactive environment. `git push` failed because GitHub requested a password after Stage 1, Stage 2, Stage 3, Stage 4, Stage 5, and Stage 6 commits.
 - Real OpenRouter vision requires `OPENROUTER_API_KEY` and a multimodal `OPENROUTER_VISION_MODEL`.
 - Real OpenRouter text generation requires `OPENROUTER_API_KEY` and `OPENROUTER_TEXT_MODEL`.
 - Real ElevenLabs TTS requires `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID`.
@@ -73,3 +73,4 @@ Current step: Stage 6 complete, publishing provider architecture.
 - 2026-05-15: Stage 5 local commit created, push still blocked by missing GitHub token.
 - 2026-05-15: Added publishing provider package and provider-backed publication worker flow.
 - 2026-05-15: Verified Docker rebuild, Alembic upgrade, health check, approval-to-publication task creation, and mock publication run.
+- 2026-05-15: Stage 6 local commit created, push still blocked by missing GitHub token.
