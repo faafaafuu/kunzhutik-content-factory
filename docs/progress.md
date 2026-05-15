@@ -31,7 +31,7 @@ Current step: Stage 2 completed locally, persona text generation provider archit
 
 ## Blockers
 
-- Push blocked: missing GitHub token in the non-interactive environment. `git push` failed because GitHub requested a password.
+- Push blocked: missing GitHub token in the non-interactive environment. `git push` failed because GitHub requested a password after Stage 1 and Stage 2 commits.
 - Real OpenRouter vision requires `OPENROUTER_API_KEY` and a multimodal `OPENROUTER_VISION_MODEL`.
 - Real OpenRouter text generation requires `OPENROUTER_API_KEY` and `OPENROUTER_TEXT_MODEL`.
 
@@ -42,3 +42,4 @@ Current step: Stage 2 completed locally, persona text generation provider archit
 - 2026-05-15: Local commit created, push blocked by missing GitHub token.
 - 2026-05-15: Added text generation provider package and OpenRouter-compatible persona copy adapter.
 - 2026-05-15: Verified Docker rebuild, Alembic upgrade, health check, and text-provider upload pipeline smoke.
+- 2026-05-15: Stage 2 local commit created, push still blocked by missing GitHub token.
