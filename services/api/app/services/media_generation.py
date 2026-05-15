@@ -16,6 +16,8 @@ from app.models.media_asset import MediaAsset
 from app.models.upload import Upload
 from app.models.video_asset import VideoAsset
 from app.models.voice_asset import VoiceAsset
+from app.providers.tts.factory import get_tts_provider
+from app.providers.tts.schemas import TTSResult
 from app.services.audit import log_event
 from app.services.storage import download_bytes, upload_bytes
 from shared.enums import AssetKind, PipelineStatus
@@ -24,7 +26,6 @@ FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 VIDEO_WIDTH = 720
 VIDEO_HEIGHT = 1280
 VIDEO_FPS = 24
-VOICE_PROVIDER = "espeak-ng"
 VOICE_NAME = "ru"
 MASCOT_ASSET_PATH = Path(__file__).resolve().parents[1] / "web" / "assets" / "kunzhutik-mascot.svg"
 
@@ -94,8 +95,9 @@ def generate_media_assets_for_drafts(db: Session, upload: Upload, drafts: list[C
                 source_path = tmp_dir / f"source{source_suffix}"
                 source_path.write_bytes(source_bytes)
 
-            _render_voice_track(script_text, voice_path)
-            duration_seconds = _read_wav_duration_seconds(voice_path)
+            tts_result = get_tts_provider().synthesize(script_text, {"voice_name": VOICE_NAME, "speed": "155"})
+            voice_path = _write_tts_result(tts_result, tmp_dir)
+            duration_seconds = _tts_duration_seconds(tts_result, voice_path)
 
             try:
                 _render_vertical_video(
@@ -122,17 +124,17 @@ def generate_media_assets_for_drafts(db: Session, upload: Upload, drafts: list[C
                 draft=draft,
                 kind=AssetKind.voice,
                 file_path=voice_path,
-                file_name=f"{draft.kind.value}-voice.wav",
-                mime_type="audio/wav",
+                file_name=f"{draft.kind.value}-voice{voice_path.suffix}",
+                mime_type=tts_result.mime_type,
                 duration_seconds=duration_seconds,
-                metadata={"provider": VOICE_PROVIDER, "voice_name": VOICE_NAME},
+                metadata=tts_result.raw_response,
             )
             voice_asset = VoiceAsset(
                 project_id=upload.project_id,
                 content_draft_id=draft.id,
                 status=PipelineStatus.completed,
-                provider=VOICE_PROVIDER,
-                voice_name=VOICE_NAME,
+                provider=tts_result.provider,
+                voice_name=tts_result.voice_id or VOICE_NAME,
                 speaking_rate=Decimal("1.00"),
                 asset_id=voice_media.id,
                 transcript=script_text,
@@ -240,23 +242,27 @@ def _create_media_asset(
     return media_asset
 
 
-def _render_voice_track(script_text: str, output_path: Path) -> None:
-    subprocess.run(
-        [
-            "espeak-ng",
-            "-v",
-            VOICE_NAME,
-            "-s",
-            "155",
-            "-w",
-            str(output_path),
-            script_text,
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=20,
-    )
+def _write_tts_result(tts_result: TTSResult, tmp_dir: Path) -> Path:
+    suffix = _audio_suffix(tts_result.mime_type)
+    output_path = tmp_dir / f"voice{suffix}"
+    output_path.write_bytes(tts_result.audio_bytes)
+    return output_path
+
+
+def _tts_duration_seconds(tts_result: TTSResult, file_path: Path) -> Decimal:
+    if tts_result.duration_sec is not None:
+        return Decimal(str(tts_result.duration_sec)).quantize(Decimal("0.01"))
+    if tts_result.mime_type == "audio/wav":
+        return _read_wav_duration_seconds(file_path)
+    return _probe_audio_duration_seconds(file_path)
+
+
+def _audio_suffix(mime_type: str) -> str:
+    if mime_type in {"audio/mpeg", "audio/mp3"}:
+        return ".mp3"
+    if mime_type == "audio/ogg":
+        return ".ogg"
+    return ".wav"
 
 
 def _render_vertical_video(
@@ -382,6 +388,26 @@ def _read_wav_duration_seconds(file_path: Path) -> Decimal:
         return Decimal("0.00")
     duration = Decimal(frame_count) / Decimal(sample_rate)
     return duration.quantize(Decimal("0.01"))
+
+
+def _probe_audio_duration_seconds(file_path: Path) -> Decimal:
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=noprint_wrappers=1:nokey=1",
+            str(file_path),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    return Decimal(result.stdout.strip() or "0").quantize(Decimal("0.01"))
 
 
 def _escape_drawtext(value: str) -> str:

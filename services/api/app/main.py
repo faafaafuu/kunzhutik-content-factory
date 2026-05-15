@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import approvals, auth, bootstrap, content_drafts, health, projects, publications, storefront, uploads
+from app.api.routes import approvals, auth, bootstrap, content_drafts, health, projects, publications, storefront, uploads, voice_assets
 from app.core.config import settings
 from app.db.session import SessionLocal
 from app.services.auth import ensure_bootstrap_operator
@@ -39,5 +39,6 @@ app.include_router(bootstrap.router, prefix="/api/v1")
 app.include_router(projects.router, prefix="/api/v1")
 app.include_router(uploads.router, prefix="/api/v1")
 app.include_router(content_drafts.router, prefix="/api/v1")
+app.include_router(voice_assets.router, prefix="/api/v1")
 app.include_router(approvals.router, prefix="/api/v1")
 app.include_router(publications.router, prefix="/api/v1")

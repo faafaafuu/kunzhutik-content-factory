@@ -43,6 +43,7 @@
 
 - Russian TTS orchestration
 - timing and pacing metadata
+- provider interface with espeak fallback, ElevenLabs adapter, and Yandex SpeechKit adapter
 
 ### Moderation and Approval
 
@@ -75,3 +76,4 @@ Current provider packages:
 
 - `app.providers.vision`: `mock` and `openrouter`
 - `app.providers.text_generation`: `mock` and `openrouter`
+- `app.providers.tts`: `mock/espeak-ng`, `elevenlabs`, and `yandex_speechkit`

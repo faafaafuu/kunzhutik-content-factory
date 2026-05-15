@@ -52,6 +52,15 @@ class Settings(BaseSettings):
     openai_vision_timeout_seconds: float = Field(default=45.0, alias="OPENAI_VISION_TIMEOUT_SECONDS")
     openai_vision_max_output_tokens: int = Field(default=900, alias="OPENAI_VISION_MAX_OUTPUT_TOKENS")
 
+    tts_provider: str = Field(default="mock", alias="TTS_PROVIDER")
+    tts_timeout_seconds: float = Field(default=60.0, alias="TTS_TIMEOUT_SECONDS")
+    elevenlabs_api_key: str | None = Field(default=None, alias="ELEVENLABS_API_KEY")
+    elevenlabs_voice_id: str | None = Field(default=None, alias="ELEVENLABS_VOICE_ID")
+    elevenlabs_model_id: str = Field(default="eleven_multilingual_v2", alias="ELEVENLABS_MODEL_ID")
+    yandex_speechkit_api_key: str | None = Field(default=None, alias="YANDEX_SPEECHKIT_API_KEY")
+    yandex_speechkit_folder_id: str | None = Field(default=None, alias="YANDEX_SPEECHKIT_FOLDER_ID")
+    yandex_speechkit_voice: str = Field(default="alena", alias="YANDEX_SPEECHKIT_VOICE")
+
     default_project_slug: str = Field(default="kunzhutik-food", alias="DEFAULT_PROJECT_SLUG")
     default_project_name: str = Field(default="Kunzhutik Food Lab", alias="DEFAULT_PROJECT_NAME")
     default_character_name: str = Field(default="Кунжутик", alias="DEFAULT_CHARACTER_NAME")

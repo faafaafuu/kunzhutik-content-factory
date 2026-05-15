@@ -6,7 +6,7 @@ Working vertical slice is preserved:
 
 `Upload -> MediaAsset -> AnalysisResult -> ContentDraft -> VoiceAsset / VideoAsset -> ApprovalTask -> PublicationTask -> PublicationResult`
 
-Current step: Stage 3 in progress, ContentDraft versioning and regenerate text endpoint.
+Current step: Stage 4 in progress, production TTS provider architecture.
 
 ## Done
 
@@ -22,20 +22,26 @@ Current step: Stage 3 in progress, ContentDraft versioning and regenerate text e
 - ContentDraft `version` already exists in the schema.
 - Added regenerate endpoint for a single content draft.
 - Regenerate smoke passed: old draft version `1` remained, new draft version `2` was created with `mock-text-v1`.
+- TTS provider architecture with espeak fallback, ElevenLabs implementation, and Yandex SpeechKit implementation.
+- Added regenerate endpoint for a single voice asset.
+- Pipeline smoke in `TTS_PROVIDER=mock`: upload reached `needs_review`, created `3` voice assets and `10` total assets.
+- Regenerate voice smoke passed: created a new `VoiceAsset` and `MediaAsset` through `espeak-ng`.
 
 ## In Progress
 
-- Commit and push for Stage 3.
+- Commit and push for Stage 4.
 
 ## Next
 
-- Stage 4: production TTS provider architecture.
+- Stage 5: video render provider architecture.
 
 ## Blockers
 
 - Push blocked: missing GitHub token in the non-interactive environment. `git push` failed because GitHub requested a password after Stage 1, Stage 2, and Stage 3 commits.
 - Real OpenRouter vision requires `OPENROUTER_API_KEY` and a multimodal `OPENROUTER_VISION_MODEL`.
 - Real OpenRouter text generation requires `OPENROUTER_API_KEY` and `OPENROUTER_TEXT_MODEL`.
+- Real ElevenLabs TTS requires `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID`.
+- Real Yandex SpeechKit TTS requires `YANDEX_SPEECHKIT_API_KEY` and `YANDEX_SPEECHKIT_FOLDER_ID`.
 
 ## Changelog
 
@@ -48,3 +54,6 @@ Current step: Stage 3 in progress, ContentDraft versioning and regenerate text e
 - 2026-05-15: Added `POST /api/v1/content-drafts/{content_draft_id}/regenerate`.
 - 2026-05-15: Verified regenerate endpoint creates a new version without overwriting the old draft.
 - 2026-05-15: Stage 3 local commit created, push still blocked by missing GitHub token.
+- 2026-05-15: Added TTS provider package and provider-backed voice generation.
+- 2026-05-15: Added `POST /api/v1/voice-assets/{voice_asset_id}/regenerate`.
+- 2026-05-15: Verified TTS pipeline smoke and voice regeneration smoke.
