@@ -18,51 +18,13 @@ from app.models.character_profile import CharacterProfile
 from app.models.content_draft import ContentDraft
 from app.models.upload import Upload
 from app.services.audit import log_event
+from app.services.content_generation import build_persona_drafts
 from app.services.media_generation import generate_media_assets_for_drafts
 from app.services.publications import publish_task_with_mock_adapter
 from app.services.vision_analysis import analyze_upload_with_configured_provider
-from shared.enums import ApprovalStatus, ContentPlatform, DraftKind, PipelineStatus
+from shared.enums import ApprovalStatus, PipelineStatus
 
 logger = get_task_logger(__name__)
-
-
-def build_persona_drafts(persona_name: str, analysis: AnalysisResult) -> list[dict]:
-    dish_name = analysis.dish_name or "наше блюдо"
-    mood = analysis.visual_mood or "аппетитное настроение"
-    plating = analysis.plating_style or "красивая подача"
-    ingredient_line = ", ".join(analysis.ingredients[:3]) if analysis.ingredients else "секретные вкусности"
-    return [
-        {
-            "platform": ContentPlatform.instagram,
-            "kind": DraftKind.post,
-            "title": f"{dish_name} от Кунжутика",
-            "caption": f"Я, Кунжутик, уже тут и шепчу: {dish_name} выглядит так, будто тарелка решила устроить праздник вкуса.",
-            "cta": "Заглядывайте в гости и пробуйте, пока я не съел взглядом всё сам.",
-            "short_text": f"{dish_name}. {mood}.",
-            "long_text": f"{dish_name} с акцентами {ingredient_line}. В кадре {mood}, а на тарелке {plating}.",
-            "script_text": f"Я Кунжутик, и сегодня у нас {dish_name}. Посмотрите на эту подачу: {plating}.",
-        },
-        {
-            "platform": ContentPlatform.vk,
-            "kind": DraftKind.story,
-            "title": f"{dish_name} в сторис",
-            "caption": f"Кунжутик на связи: тут настолько вкусный кадр, что телефон сам хочет откусить уголок.",
-            "cta": "Пишите, кому бы вы это отправили прямо сейчас.",
-            "short_text": f"{dish_name}. {ingredient_line}.",
-            "long_text": f"Сегодняшний герой ленты: {dish_name}. Состав намекает на {ingredient_line}, а настроение кадра {mood}.",
-            "script_text": f"Кунжутик показывает {dish_name}. И да, это тот случай, когда сторис пахнет вкусно.",
-        },
-        {
-            "platform": ContentPlatform.yandex_maps,
-            "kind": DraftKind.news,
-            "title": f"Новость про {dish_name}",
-            "caption": f"Кунжутик рекомендует обратить внимание на {dish_name}: свежая подача и понятный аппетитный акцент.",
-            "cta": "Сохраните место и загляните на дегустацию.",
-            "short_text": f"{dish_name} уже ждёт гостей.",
-            "long_text": f"{dish_name} с нотами {ingredient_line}. Визуально: {mood}. Формат подачи: {plating}.",
-            "script_text": None,
-        },
-    ]
 
 
 @celery_app.task(name="app.tasks.process_upload_pipeline", autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
@@ -104,17 +66,13 @@ def process_upload_pipeline(upload_id: str) -> None:
         persona_name = character.name if character else "Кунжутик"
 
         drafts: list[ContentDraft] = []
-        for payload in build_persona_drafts(persona_name, analysis):
+        for payload in build_persona_drafts(character, analysis):
             draft = ContentDraft(
                 project_id=upload.project_id,
                 upload_id=upload.id,
                 analysis_result_id=analysis.id,
                 persona_name=persona_name,
                 status=PipelineStatus.completed,
-                metadata_json={
-                    "generation_mode": "stage1_mock",
-                    "analysis_provider": analysis.provider,
-                },
                 **payload,
             )
             db.add(draft)

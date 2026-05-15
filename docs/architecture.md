@@ -31,6 +31,7 @@
 - persona layer for `Кунжутик`
 - per-platform copy generation
 - scripts, CTA, short and long variants
+- provider interface with local mock fallback and OpenRouter text generation adapter
 
 ### Creative Render
 
@@ -73,3 +74,4 @@ External integrations are added through provider packages. Each package keeps a 
 Current provider packages:
 
 - `app.providers.vision`: `mock` and `openrouter`
+- `app.providers.text_generation`: `mock` and `openrouter`
