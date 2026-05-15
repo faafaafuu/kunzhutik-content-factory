@@ -33,7 +33,7 @@ Current step: Stage 3 in progress, ContentDraft versioning and regenerate text e
 
 ## Blockers
 
-- Push blocked: missing GitHub token in the non-interactive environment. `git push` failed because GitHub requested a password after Stage 1 and Stage 2 commits.
+- Push blocked: missing GitHub token in the non-interactive environment. `git push` failed because GitHub requested a password after Stage 1, Stage 2, and Stage 3 commits.
 - Real OpenRouter vision requires `OPENROUTER_API_KEY` and a multimodal `OPENROUTER_VISION_MODEL`.
 - Real OpenRouter text generation requires `OPENROUTER_API_KEY` and `OPENROUTER_TEXT_MODEL`.
 
@@ -47,3 +47,4 @@ Current step: Stage 3 in progress, ContentDraft versioning and regenerate text e
 - 2026-05-15: Stage 2 local commit created, push still blocked by missing GitHub token.
 - 2026-05-15: Added `POST /api/v1/content-drafts/{content_draft_id}/regenerate`.
 - 2026-05-15: Verified regenerate endpoint creates a new version without overwriting the old draft.
+- 2026-05-15: Stage 3 local commit created, push still blocked by missing GitHub token.
