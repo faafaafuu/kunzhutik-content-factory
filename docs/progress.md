@@ -41,7 +41,7 @@ Current step: Stage 5 complete, video render provider architecture.
 
 ## Blockers
 
-- Push blocked: missing GitHub token in the non-interactive environment. `git push` failed because GitHub requested a password after Stage 1, Stage 2, Stage 3, and Stage 4 commits.
+- Push blocked: missing GitHub token in the non-interactive environment. `git push` failed because GitHub requested a password after Stage 1, Stage 2, Stage 3, Stage 4, and Stage 5 commits.
 - Real OpenRouter vision requires `OPENROUTER_API_KEY` and a multimodal `OPENROUTER_VISION_MODEL`.
 - Real OpenRouter text generation requires `OPENROUTER_API_KEY` and `OPENROUTER_TEXT_MODEL`.
 - Real ElevenLabs TTS requires `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID`.
@@ -66,3 +66,4 @@ Current step: Stage 5 complete, video render provider architecture.
 - 2026-05-15: Added video render provider package and provider-backed ffmpeg rendering.
 - 2026-05-15: Added `POST /api/v1/video-assets/{video_asset_id}/regenerate`.
 - 2026-05-15: Verified Docker rebuild, Alembic upgrade, health check, video-provider upload pipeline smoke, and video regeneration smoke.
+- 2026-05-15: Stage 5 local commit created, push still blocked by missing GitHub token.
