@@ -20,27 +20,10 @@ from app.models.upload import Upload
 from app.services.audit import log_event
 from app.services.media_generation import generate_media_assets_for_drafts
 from app.services.publications import publish_task_with_mock_adapter
+from app.services.vision_analysis import analyze_upload_with_configured_provider
 from shared.enums import ApprovalStatus, ContentPlatform, DraftKind, PipelineStatus
 
 logger = get_task_logger(__name__)
-
-
-def build_mock_analysis(upload: Upload) -> dict:
-    return {
-        "provider": "mock-vision-v1",
-        "dish_name": "Авторское блюдо дня",
-        "ingredients": ["кунжут", "соус", "свежая зелень"],
-        "visual_mood": "аппетитный и тёплый",
-        "plating_style": "аккуратная ресторанная подача",
-        "features_json": {
-            "lighting": "soft warm",
-            "camera_angle": "close-up",
-            "hero_element": "texture",
-        },
-        "raw_payload": {
-            "note": "Stage 1 mock analysis. Replace with real vision adapter in Stage 2."
-        },
-    }
 
 
 def build_persona_drafts(persona_name: str, analysis: AnalysisResult) -> list[dict]:
@@ -94,7 +77,7 @@ def process_upload_pipeline(upload_id: str) -> None:
         log_event(db, upload.project_id, "upload", str(upload.id), "pipeline.started", "worker", {})
         db.flush()
 
-        analysis_payload = build_mock_analysis(upload)
+        analysis_payload = analyze_upload_with_configured_provider(upload).model_payload()
         analysis = AnalysisResult(
             project_id=upload.project_id,
             upload_id=upload.id,
@@ -128,7 +111,10 @@ def process_upload_pipeline(upload_id: str) -> None:
                 analysis_result_id=analysis.id,
                 persona_name=persona_name,
                 status=PipelineStatus.completed,
-                metadata_json={"generation_mode": "stage1_mock"},
+                metadata_json={
+                    "generation_mode": "stage1_mock",
+                    "analysis_provider": analysis.provider,
+                },
                 **payload,
             )
             db.add(draft)
@@ -162,6 +148,7 @@ def process_upload_pipeline(upload_id: str) -> None:
             telegram_chat_id=None if settings.telegram_open_access else settings.telegram_approval_chat_id,
             preview_payload={
                 "dish_name": analysis.dish_name,
+                "analysis_provider": analysis.provider,
                 "drafts": [
                     {
                         "platform": draft.platform.value,
@@ -172,7 +159,7 @@ def process_upload_pipeline(upload_id: str) -> None:
                     }
                     for draft in drafts
                 ],
-                "mock": True,
+                "mock": analysis.provider.startswith("mock"),
                 "video_template": "mascot_story_v1",
             },
         )

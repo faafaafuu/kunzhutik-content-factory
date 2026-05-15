@@ -1,6 +1,6 @@
 # Kunzhutik Content Factory: структура, отчет и план работ
 
-Дата отчета: 2026-05-14
+Дата отчета: 2026-05-15
 
 ## 1. Краткое описание проекта
 
@@ -86,6 +86,8 @@ kunzhutik-content-factory/
 │   ├── architecture.md
 │   └── project-report.md
 ├── infra/
+│   ├── caddy/
+│   │   └── Caddyfile
 │   └── scripts/
 │       └── bootstrap_minio.sh
 ├── packages/
@@ -106,7 +108,8 @@ kunzhutik-content-factory/
 │   │   │   └── versions/
 │   │   │       ├── 20260423_0001_initial_schema.py
 │   │   │       ├── 20260423_0002_storefront_orders.py
-│   │   │       └── 20260423_0003_storefront_payment_method.py
+│   │   │       ├── 20260423_0003_storefront_payment_method.py
+│   │   │       └── 20260514_0004_operator_users.py
 │   │   └── app/
 │   │       ├── __init__.py
 │   │       ├── main.py
@@ -117,6 +120,7 @@ kunzhutik-content-factory/
 │   │       │   └── routes/
 │   │       │       ├── __init__.py
 │   │       │       ├── approvals.py
+│   │       │       ├── auth.py
 │   │       │       ├── bootstrap.py
 │   │       │       ├── health.py
 │   │       │       ├── projects.py
@@ -169,6 +173,7 @@ kunzhutik-content-factory/
 │   │       │   ├── storage.py
 │   │       │   ├── storefront.py
 │   │       │   ├── uploads.py
+│   │       │   ├── vision_analysis.py
 │   │       │   └── workflow.py
 │   │       ├── store/
 │   │       │   ├── __init__.py
@@ -267,6 +272,7 @@ aiogram bot. Отвечает за:
 Скрипты инфраструктуры:
 
 - bootstrap MinIO bucket.
+- Caddy reverse proxy для временного HTTPS-домена.
 
 ## 5. Сущности данных
 
@@ -317,7 +323,7 @@ app.tasks.process_upload_pipeline
 Шаги:
 
 1. Переводит upload в `processing`.
-2. Создает mock vision analysis.
+2. Запускает `vision-analysis-service`.
 3. Создает `AnalysisResult`.
 4. Создает drafts для:
    - Instagram;
@@ -328,7 +334,33 @@ app.tasks.process_upload_pipeline
 7. Переводит upload в `needs_review`.
 8. При configured Telegram approval chat может отправить preview.
 
-### 6.3. Media generation
+### 6.3. Vision analysis
+
+Сервис:
+
+```text
+services/api/app/services/vision_analysis.py
+```
+
+Режимы:
+
+- `VISION_ANALYSIS_PROVIDER=mock` - безопасный локальный режим без внешних API;
+- `VISION_ANALYSIS_PROVIDER=openai` - real vision adapter через OpenAI Responses API.
+
+Сервис извлекает:
+
+- dish name;
+- вероятные ingredients;
+- visual mood;
+- plating style;
+- composition/lighting/camera angle/hero element/colors;
+- content warnings;
+- confidence;
+- raw provider metadata.
+
+Если real provider недоступен, не настроен или вернул ошибку, worker автоматически падает обратно на `mock-vision-v1` и сохраняет `fallback_reason` в `raw_payload`.
+
+### 6.4. Media generation
 
 Сервис:
 
@@ -345,7 +377,7 @@ services/api/app/services/media_generation.py
 - вертикальные 9:16 видео;
 - fallback rendering без source image, если файл не поддерживается как изображение.
 
-### 6.4. Pipeline summary
+### 6.5. Pipeline summary
 
 Endpoint:
 
@@ -579,7 +611,21 @@ Telegram embedded WebApp требует HTTPS. При текущем `APP_BASE_U
 GET /admin/orders
 ```
 
-Несмотря на старый путь, страница теперь является полноценным operator dashboard.
+Несмотря на старый путь, страница теперь является полноценным operator dashboard. Доступ закрыт session-cookie авторизацией.
+
+Login:
+
+```text
+GET /admin/login
+POST /api/v1/auth/login
+POST /api/v1/auth/logout
+GET /api/v1/auth/me
+```
+
+Роли:
+
+- `operator`;
+- `admin`.
 
 Вкладки:
 
@@ -842,11 +888,69 @@ f5f717b feat: modernize storefront layout
 - operator commands с allowlist;
 - Telegram WebApp theme/haptics/sendData.
 
+### HTTPS для Telegram WebApp
+
+Коммит:
+
+```text
+87dc1db feat: add https reverse proxy for telegram webapp
+afd8f67 fix: set public dns for caddy acme
+```
+
+Сделано:
+
+- добавлен `docker-compose.https.yml`;
+- добавлен Caddy reverse proxy;
+- настроен временный HTTPS-домен через `sslip.io`;
+- проверена выдача Let's Encrypt сертификата;
+- Telegram WebApp может использовать HTTPS URL.
+
+### Auth/RBAC для dashboard
+
+Коммит:
+
+```text
+615e2cf feat: add dashboard auth and role guards
+```
+
+Сделано:
+
+- модель `OperatorUser`;
+- миграция `20260514_0004_operator_users.py`;
+- password hashing;
+- session cookie;
+- login page `/admin/login`;
+- закрыт `/admin/orders`;
+- закрыты write/read API для dashboard;
+- роли `operator/admin`;
+- bootstrap admin через env.
+
+### Vision analysis adapter
+
+Коммит:
+
+```text
+будет создан после текущей задачи
+```
+
+Сделано:
+
+- вынесен `VisionAnalyzer` interface;
+- добавлен `MockVisionAnalyzer`;
+- добавлен `OpenAIVisionAnalyzer`;
+- добавлены env-настройки provider/model/timeout/detail;
+- worker использует provider metadata в `AnalysisResult`;
+- Telegram preview получает `analysis_provider` и `mock`;
+- проверен vertical smoke: upload перешел в `needs_review`, создано `3` drafts, `1` approval, `10` assets.
+
 ## 16. Текущий статус Git
 
 Последние релевантные коммиты:
 
 ```text
+615e2cf feat: add dashboard auth and role guards
+afd8f67 fix: set public dns for caddy acme
+87dc1db feat: add https reverse proxy for telegram webapp
 4596e5a feat: add telegram storefront mode
 53e3a95 feat: add operator pipeline dashboard
 887c9c9 feat: add publication task flow
@@ -869,49 +973,30 @@ eced3fd refine storefront palette and auth icons
 
 Mock/stub части:
 
-- `vision-analysis-service` пока mock;
+- `vision-analysis-service` имеет mock по умолчанию и optional OpenAI adapter;
 - `content-generation-service` пока deterministic persona templates;
 - `voice-service` использует `espeak-ng`, не production TTS provider;
 - `creative-render-service` работает через базовые ffmpeg templates;
 - `publishing-service` использует mock adapter;
 - Instagram/VK/Yandex Maps реальные adapters не подключены;
 - OAuth VK/Google в storefront не подключен;
-- RBAC/security dashboard отсутствуют;
-- HTTPS для Telegram WebApp еще не настроен.
+- RBAC/security dashboard реализованы базово, без CSRF hardening и расширенной policy;
+- HTTPS для Telegram WebApp настроен временно через `sslip.io`; нужен постоянный домен.
 
 ## 18. Основные риски и ограничения
 
 ### 18.1. Telegram WebApp требует HTTPS
 
-Сейчас в `.env`:
+Временное решение уже настроено через Caddy и `sslip.io`. Для production нужен постоянный домен, DNS и стабильная reverse-proxy конфигурация.
 
-```text
-APP_BASE_URL=http://84.247.166.53:8000
-```
+### 18.2. Dashboard security hardening
 
-Для embedded Telegram app нужно:
+Базовая авторизация уже включена. Для production нужно добавить:
 
-```text
-APP_BASE_URL=https://your-domain.example
-```
-
-или:
-
-```text
-TELEGRAM_APPROVAL_BASE_URL=https://your-domain.example
-```
-
-Без HTTPS Telegram откроет обычную ссылку, а не встроенное WebApp окно.
-
-### 18.2. Нет dashboard auth
-
-`/admin/orders` сейчас открыт без авторизации. Для production нужно добавить:
-
-- login;
-- operator roles;
-- session/JWT;
 - CSRF/CORS policy;
 - audit actor binding.
+- rate limit на login;
+- управление пользователями в admin UI.
 
 ### 18.3. Publication adapters
 
@@ -939,86 +1024,22 @@ TELEGRAM_APPROVAL_BASE_URL=https://your-domain.example
 
 ## 19. Предстоящие работы
 
-### Приоритет 1: HTTPS и Telegram WebApp production readiness
-
-Задачи:
-
-- купить/подключить домен;
-- настроить Nginx/Caddy reverse proxy;
-- выпустить Let's Encrypt сертификат;
-- прокинуть `https://domain` на API;
-- обновить `.env`:
-  - `APP_BASE_URL=https://domain`;
-  - или `TELEGRAM_APPROVAL_BASE_URL=https://domain`;
-- перезапустить `api` и `telegram-bot`;
-- проверить встроенное открытие WebApp в Telegram.
-
-Критерий готовности:
-
-- кнопка в Telegram открывает встроенное окно, а не внешний браузер;
-- `/tg` корректно получает Telegram WebApp profile;
-- заказ создается из WebApp;
-- оператор получает Telegram notification.
-
-### Приоритет 2: Auth/RBAC для dashboard
-
-Задачи:
-
-- добавить модель `OperatorUser` или простой admin login;
-- добавить password hash;
-- добавить JWT/session cookie;
-- закрыть `/admin/orders`;
-- закрыть write API dashboard actions;
-- добавить роли:
-  - `operator`;
-  - `admin`;
-  - `publisher`;
-- писать actor не как `operator-dashboard`, а как реального пользователя.
-
-Критерий готовности:
-
-- dashboard недоступен без login;
-- действия approval/publication/order status имеют реального actor.
-
-### Приоритет 3: Реальный vision-analysis adapter
-
-Задачи:
-
-- добавить interface `VisionAnalyzer`;
-- добавить provider implementation;
-- принимать image bytes/storage key;
-- выделять:
-  - dish name;
-  - ingredients;
-  - plating;
-  - mood;
-  - visual features;
-  - warnings;
-- сохранять raw provider response;
-- добавить retries/timeouts.
-
-Критерий готовности:
-
-- analysis не mock;
-- результаты зависят от фотографии;
-- pipeline сохраняет provider metadata.
-
-### Приоритет 4: Persona/content generation layer
+### Приоритет 1: Persona/content generation layer
 
 Задачи:
 
 - вынести prompt templates;
 - использовать `CharacterProfile.persona_prompt`;
 - генерировать варианты:
-  - short;
-  - long;
-  - caption;
-  - CTA;
-  - script;
+- short;
+- long;
+- caption;
+- CTA;
+- script;
 - учитывать platform constraints:
-  - Instagram post/reels/stories;
-  - VK post/clips/stories;
-  - Yandex Maps news;
+- Instagram post/reels/stories;
+- VK post/clips/stories;
+- Yandex Maps news;
 - добавить regenerate text для draft;
 - версионировать drafts.
 
@@ -1028,17 +1049,13 @@ TELEGRAM_APPROVAL_BASE_URL=https://your-domain.example
 - можно regenerate конкретный draft;
 - новая версия не затирает старую.
 
-### Приоритет 5: Production TTS
+### Приоритет 2: Production TTS
 
 Задачи:
 
 - выбрать TTS provider;
 - добавить provider abstraction;
-- добавить настройки:
-  - voice;
-  - speaking rate;
-  - pitch;
-  - emotion/style;
+- добавить настройки voice/speaking rate/pitch/style;
 - добавить regenerate voice;
 - сохранять provider payload;
 - ограничить длину script.
@@ -1048,14 +1065,12 @@ TELEGRAM_APPROVAL_BASE_URL=https://your-domain.example
 - voice звучит живо и подходит персонажу;
 - voice regeneration работает по конкретному draft.
 
-### Приоритет 6: Render templates
+### Приоритет 3: Render templates
 
 Задачи:
 
 - формализовать template registry;
-- добавить форматы:
-  - 9:16 story/reel/clip;
-  - 1:1 post;
+- добавить форматы 9:16 story/reel/clip и 1:1 post;
 - добавить template params;
 - добавить safe text layout;
 - добавить brand assets;
@@ -1069,21 +1084,13 @@ TELEGRAM_APPROVAL_BASE_URL=https://your-domain.example
 - video assets проходят визуальную проверку;
 - regenerate video работает без пересоздания всего pipeline.
 
-### Приоритет 7: Реальные publishing adapters
+### Приоритет 4: Реальные publishing adapters
 
 Задачи:
 
-- VK adapter:
-  - posts;
-  - clips;
-  - stories if available;
-- Yandex Maps adapter:
-  - photos;
-  - news/posts;
-- Instagram workflow:
-  - prepare assets;
-  - manual publishing package;
-  - later direct integration if available and legal for account type;
+- VK adapter: posts, clips, stories where available;
+- Yandex Maps adapter: photos, news/posts;
+- Instagram workflow: prepare assets/manual package/direct integration if available;
 - retry policy;
 - idempotency;
 - rate limits;
@@ -1095,16 +1102,13 @@ TELEGRAM_APPROVAL_BASE_URL=https://your-domain.example
 - результат сохраняет real remote id/url;
 - failures видны в dashboard.
 
-### Приоритет 8: Dashboard v2
+### Приоритет 5: Dashboard v2
 
 Задачи:
 
 - перейти на Next.js или оставить static, если хватает;
 - добавить filtering/search;
-- добавить detail pages:
-  - uploads;
-  - orders;
-  - publications;
+- добавить detail pages: uploads/orders/publications;
 - добавить asset preview inline;
 - добавить video player;
 - добавить timeline view;
@@ -1115,7 +1119,7 @@ TELEGRAM_APPROVAL_BASE_URL=https://your-domain.example
 
 - оператор может вести полный цикл без API/curl.
 
-### Приоритет 9: Observability
+### Приоритет 6: Observability
 
 Задачи:
 
@@ -1132,7 +1136,7 @@ TELEGRAM_APPROVAL_BASE_URL=https://your-domain.example
 - можно быстро понять, где сломался pipeline;
 - ошибки worker/API видны без ручного чтения контейнера.
 
-### Приоритет 10: Tests/CI
+### Приоритет 7: Tests/CI
 
 Задачи:
 
@@ -1147,18 +1151,25 @@ TELEGRAM_APPROVAL_BASE_URL=https://your-domain.example
 
 - PR/commit проверяет базовую работоспособность pipeline.
 
+### Отдельно: Production domain/security
+
+Задачи:
+
+- заменить временный `sslip.io` на постоянный домен;
+- добавить CSRF/rate-limit для dashboard auth;
+- добавить управление пользователями;
+- вынести secrets в secret manager.
+
 ## 20. Рекомендованный ближайший порядок работ
 
-1. Настроить HTTPS для `84.247.166.53` через домен и reverse proxy.
-2. Проверить Telegram embedded WebApp end-to-end.
-3. Закрыть dashboard авторизацией.
-4. Добавить real vision adapter.
-5. Добавить persona generation service с regenerate text.
-6. Подключить production TTS.
-7. Улучшить render templates и 1:1 формат.
-8. Реализовать VK publication adapter.
-9. Реализовать Yandex Maps adapter.
-10. Добавить tests/CI/observability.
+1. Добавить persona generation service с regenerate text.
+2. Подключить production TTS.
+3. Улучшить render templates и 1:1 формат.
+4. Реализовать VK publication adapter.
+5. Реализовать Yandex Maps adapter.
+6. Добавить Dashboard v2 controls для regenerate/retry.
+7. Добавить tests/CI/observability.
+8. Заменить временный HTTPS-домен на постоянный.
 
 ## 21. Команды для быстрой проверки
 
@@ -1237,13 +1248,15 @@ curl -X POST http://localhost:8000/api/v1/publication-tasks/<PUBLICATION_TASK_ID
 - есть storefront order flow;
 - есть Telegram storefront mode;
 - есть operator dashboard;
+- есть временный HTTPS reverse proxy;
+- есть dashboard auth/RBAC;
+- есть pluggable vision-analysis adapter;
 - есть publication task flow.
 
 Главные production blockers сейчас:
 
-- нет HTTPS для Telegram embedded WebApp;
-- нет auth/RBAC для dashboard;
-- vision/content/TTS/publication adapters пока не production providers;
+- временный HTTPS-домен нужно заменить постоянным;
+- content/TTS/publication adapters пока не production providers;
 - нет CI/tests/observability.
 
-Следующий технически правильный шаг: HTTPS + Telegram embedded WebApp end-to-end, затем auth dashboard, затем real AI adapters.
+Следующий технически правильный шаг: persona/content generation layer с версионированием и regenerate text.

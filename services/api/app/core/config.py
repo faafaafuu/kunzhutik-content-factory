@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     dashboard_bootstrap_password: str | None = Field(default=None, alias="DASHBOARD_BOOTSTRAP_PASSWORD")
     dashboard_bootstrap_role: str = Field(default="admin", alias="DASHBOARD_BOOTSTRAP_ROLE")
 
+    vision_analysis_provider: str = Field(default="mock", alias="VISION_ANALYSIS_PROVIDER")
+    openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
+    openai_vision_model: str = Field(default="gpt-4.1-mini", alias="OPENAI_VISION_MODEL")
+    openai_vision_detail: str = Field(default="low", alias="OPENAI_VISION_DETAIL")
+    openai_vision_timeout_seconds: float = Field(default=45.0, alias="OPENAI_VISION_TIMEOUT_SECONDS")
+    openai_vision_max_output_tokens: int = Field(default=900, alias="OPENAI_VISION_MAX_OUTPUT_TOKENS")
+
     default_project_slug: str = Field(default="kunzhutik-food", alias="DEFAULT_PROJECT_SLUG")
     default_project_name: str = Field(default="Kunzhutik Food Lab", alias="DEFAULT_PROJECT_NAME")
     default_character_name: str = Field(default="Кунжутик", alias="DEFAULT_CHARACTER_NAME")
