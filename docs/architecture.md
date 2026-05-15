@@ -24,6 +24,7 @@
 - visual feature extraction
 - dish metadata
 - scene mood and plating descriptors
+- provider interface with local mock fallback and OpenRouter vision adapter
 
 ### Content Generation
 
@@ -65,3 +66,10 @@ Audit events are written on all state transitions.
 Stage 1 keeps the workflow in one Python codebase with explicit modules.
 Stage 2+ can split heavy modules into independent deployable services without changing the database contract.
 
+## Provider Pattern
+
+External integrations are added through provider packages. Each package keeps a base interface, schemas, mock/fallback implementation, real implementation, and factory. Provider choice is controlled by env, and mock providers remain available for local development.
+
+Current provider packages:
+
+- `app.providers.vision`: `mock` and `openrouter`

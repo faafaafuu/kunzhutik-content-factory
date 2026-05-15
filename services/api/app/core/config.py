@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     dashboard_bootstrap_password: str | None = Field(default=None, alias="DASHBOARD_BOOTSTRAP_PASSWORD")
     dashboard_bootstrap_role: str = Field(default="admin", alias="DASHBOARD_BOOTSTRAP_ROLE")
 
+    vision_provider: str = Field(default="mock", alias="VISION_PROVIDER")
+    enable_provider_fallback: bool = Field(default=True, alias="ENABLE_PROVIDER_FALLBACK")
+    openrouter_api_key: str | None = Field(default=None, alias="OPENROUTER_API_KEY")
+    openrouter_vision_model: str = Field(default="", alias="OPENROUTER_VISION_MODEL")
+    openrouter_timeout_seconds: float = Field(default=60.0, alias="OPENROUTER_TIMEOUT_SECONDS")
+
+    # Backward-compatible settings for the previous experimental OpenAI adapter.
     vision_analysis_provider: str = Field(default="mock", alias="VISION_ANALYSIS_PROVIDER")
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     openai_vision_model: str = Field(default="gpt-4.1-mini", alias="OPENAI_VISION_MODEL")
