@@ -29,10 +29,11 @@ Current step: Stage 1 completed locally, real AI vision provider architecture th
 
 ## Blockers
 
-- `git push` may be blocked if `GITHUB_TOKEN` is not available in the environment.
+- Push blocked: missing GitHub token in the non-interactive environment. `git push` failed because GitHub requested a password.
 - Real OpenRouter vision requires `OPENROUTER_API_KEY` and a multimodal `OPENROUTER_VISION_MODEL`.
 
 ## Changelog
 
 - 2026-05-15: Added vision provider package and OpenRouter-compatible image analysis adapter.
 - 2026-05-15: Verified Docker rebuild, Alembic upgrade, health check, and upload pipeline smoke.
+- 2026-05-15: Local commit created, push blocked by missing GitHub token.
