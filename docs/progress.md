@@ -45,7 +45,7 @@ Current step: Stage 7 complete, dashboard/provider visibility polish.
 
 ## Blockers
 
-- Push blocked: missing GitHub token in the non-interactive environment. `git push` failed because GitHub requested a password after Stage 1, Stage 2, Stage 3, Stage 4, Stage 5, and Stage 6 commits.
+- Push blocked: missing GitHub token in the non-interactive environment. `git push` failed because GitHub requested a password after Stage 1, Stage 2, Stage 3, Stage 4, Stage 5, Stage 6, and Stage 7 commits.
 - Real OpenRouter vision requires `OPENROUTER_API_KEY` and a multimodal `OPENROUTER_VISION_MODEL`.
 - Real OpenRouter text generation requires `OPENROUTER_API_KEY` and `OPENROUTER_TEXT_MODEL`.
 - Real ElevenLabs TTS requires `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID`.
@@ -77,3 +77,4 @@ Current step: Stage 7 complete, dashboard/provider visibility polish.
 - 2026-05-15: Stage 6 local commit created, push still blocked by missing GitHub token.
 - 2026-05-16: Added dashboard provider/fallback visibility for analysis, drafts, assets, and publications.
 - 2026-05-16: Verified Python compile, admin JavaScript syntax, Docker API rebuild, Alembic upgrade, health check, static admin JS, and pipeline metadata exposure.
+- 2026-05-16: Stage 7 local commit created, push still blocked by missing GitHub token.
