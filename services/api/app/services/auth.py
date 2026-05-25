@@ -45,7 +45,7 @@ def authenticate_operator(db: Session, username: str, password: str) -> Operator
     return user
 
 
-def set_session_cookie(response: Response, user: OperatorUser) -> None:
+def set_session_cookie(response: Response, user: OperatorUser, request: Request | None = None) -> None:
     expires_at = int(time.time()) + SESSION_TTL_SECONDS
     payload = f"{user.id}:{user.role}:{expires_at}"
     signature = _sign(payload)
@@ -54,7 +54,7 @@ def set_session_cookie(response: Response, user: OperatorUser) -> None:
         f"{payload}:{signature}",
         max_age=SESSION_TTL_SECONDS,
         httponly=True,
-        secure=settings.app_base_url.startswith("https://") or (settings.telegram_approval_base_url or "").startswith("https://"),
+        secure=_should_use_secure_cookie(request),
         samesite="lax",
         path="/",
     )
@@ -105,6 +105,15 @@ def ensure_bootstrap_operator(db: Session) -> None:
         db.commit()
     except SQLAlchemyError:
         db.rollback()
+
+
+def _should_use_secure_cookie(request: Request | None) -> bool:
+    if not request:
+        return settings.app_base_url.startswith("https://") or (settings.telegram_approval_base_url or "").startswith("https://")
+    forwarded_proto = request.headers.get("x-forwarded-proto", "").split(",")[0].strip().lower()
+    if forwarded_proto:
+        return forwarded_proto == "https"
+    return request.url.scheme == "https"
 
 
 def _sign(payload: str) -> str:

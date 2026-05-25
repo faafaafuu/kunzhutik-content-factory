@@ -24,11 +24,11 @@ def admin_login_page(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/api/v1/auth/login", response_model=LoginResponse)
-def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)) -> LoginResponse:
+def login(payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)) -> LoginResponse:
     user = authenticate_operator(db, payload.username, payload.password)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
-    set_session_cookie(response, user)
+    set_session_cookie(response, user, request)
     return LoginResponse(user=_to_me(user))
 
 
