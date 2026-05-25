@@ -205,11 +205,57 @@ function renderPipeline(summary) {
       <article class="admin-card">${renderAnalysis(summary.analysis_results)}</article>
       <article class="admin-card">${renderTimeline(summary.timeline)}</article>
       <article class="admin-card wide">${renderDrafts(summary.drafts)}</article>
+      <article class="admin-card wide">${renderAIVideo(summary.scene_plans || [], summary.drafts)}</article>
       <article class="admin-card wide">${renderPublications(summary.publication_tasks)}</article>
       <article class="admin-card wide">${renderAssets(summary.assets)}</article>
     </div>
   `;
   bindPipelineActions(summary);
+}
+
+function renderAIVideo(scenePlans, drafts) {
+  const latest = scenePlans.at(0);
+  if (!latest) {
+    return `
+      <p class="eyebrow">AI Video</p>
+      <p class="muted">ScenePlan еще не создан. Старый template video pipeline при этом остается рабочим.</p>
+      <div class="card-actions">
+        <button type="button" data-ai-video-action="create-plan" ${drafts.length ? "" : "disabled"}>Generate scene plan</button>
+      </div>
+    `;
+  }
+  return `
+    <p class="eyebrow">AI Video</p>
+    <div class="order-head">
+      <div>
+        <h3>ScenePlan ${latest.id.slice(0, 8)}</h3>
+        <p class="muted">${escapeHtml(latest.status)} / ${escapeHtml(latest.aspect_ratio)} / ${latest.total_duration_sec}s</p>
+      </div>
+      <span class="pill">${latest.scenes.length} scenes</span>
+    </div>
+    <div class="asset-grid">
+      ${latest.scenes
+        .map(
+          (scene) => `
+            <div class="asset-card">
+              <span class="pill ${scene.status === "generated" ? "good" : "warn"}">Scene ${scene.scene_number} / ${escapeHtml(scene.status)}</span>
+              <span class="pill">${escapeHtml(scene.provider)}</span>
+              <p>${escapeHtml(scene.subtitle_text || scene.visual_prompt)}</p>
+              <p class="muted">${escapeHtml(scene.emotion || "")} ${scene.duration_sec}s</p>
+              <div class="card-actions">
+                <button type="button" data-ai-scene-id="${scene.id}">Regenerate scene</button>
+              </div>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+    <div class="card-actions">
+      <button type="button" data-ai-video-action="regenerate-plan" data-scene-plan-id="${latest.id}">Regenerate scene plan</button>
+      <button type="button" data-ai-video-action="generate-scenes" data-scene-plan-id="${latest.id}">Generate scenes</button>
+      <button type="button" data-ai-video-action="render-final" data-scene-plan-id="${latest.id}">Render final video</button>
+    </div>
+  `;
 }
 
 function renderApproval(approval) {
@@ -353,6 +399,42 @@ function bindPipelineActions() {
         body: JSON.stringify({ actor: "operator-dashboard" }),
       });
       window.setTimeout(refreshPipeline, 900);
+    });
+  });
+  els.pipelineDetail.querySelectorAll("[data-ai-video-action]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      const action = button.dataset.aiVideoAction;
+      const scenePlanId = button.dataset.scenePlanId;
+      if (action === "create-plan") {
+        await requestJson(`/api/v1/uploads/${state.selectedUploadId}/scene-plans`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+      } else if (action === "regenerate-plan") {
+        await requestJson(`/api/v1/scene-plans/${scenePlanId}/regenerate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: "Dashboard action" }),
+        });
+      } else if (action === "generate-scenes") {
+        await requestJson(`/api/v1/scene-plans/${scenePlanId}/generate-scenes`, { method: "POST" });
+      } else if (action === "render-final") {
+        await requestJson(`/api/v1/scene-plans/${scenePlanId}/render-final-video`, { method: "POST" });
+      }
+      await refreshPipeline();
+    });
+  });
+  els.pipelineDetail.querySelectorAll("[data-ai-scene-id]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      await requestJson(`/api/v1/scenes/${button.dataset.aiSceneId}/regenerate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Dashboard action" }),
+      });
+      await refreshPipeline();
     });
   });
 }

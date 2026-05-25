@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, require_operator
 from app.models.operator_user import OperatorUser
 from app.schemas.publication import PublicationTaskRead, PublicationTaskWithResults
+from app.schemas.scene_plan import AIVideoSceneRead, ScenePlanDetail
 from app.schemas.upload import UploadAssetsResponse, UploadAssetRead, UploadListResponse, UploadPipelineSummary, UploadRead, UploadTimelineEvent
 from app.services.uploads import (
     create_upload_with_file,
@@ -92,6 +93,12 @@ def get_pipeline(
                 results=summary["publication_results"].get(task.id, []),
             )
             for task in summary["publication_tasks"]
+        ],
+        scene_plans=[
+            ScenePlanDetail.model_validate(plan).model_copy(
+                update={"scenes": [AIVideoSceneRead.model_validate(scene) for scene in summary["scene_plan_scenes"].get(plan.id, [])]}
+            )
+            for plan in summary["scene_plans"]
         ],
         assets=assets,
         timeline=summary["timeline"],

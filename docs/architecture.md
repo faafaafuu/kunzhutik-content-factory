@@ -39,6 +39,15 @@
 - mascot overlay
 - aspect-ratio exports
 - provider interface with ffmpeg fallback and Creatomate adapter
+- final assembly layer; it does not generate live character animation
+
+### AI Video Scenes
+
+- `ScenePlan` describes a short 3D/cartoon reel as ordered scenes
+- `AIVideoScene` tracks per-scene generation status and media asset output
+- `AIVideoProvider` owns animated scene generation: character movement, emotion, camera, and mini-story beats
+- current MVP provider is `mock`; future providers are `kling`, `runway`, then `pika`/`luma`
+- `VIDEO_MODE=template` keeps the old ffmpeg/Creatomate branch; `VIDEO_MODE=ai_video` enables scene-plan workflows
 
 ### Voice
 
@@ -61,7 +70,13 @@
 
 ## Data Lifecycle
 
-`Upload -> MediaAsset -> AnalysisResult -> ContentDraft -> ApprovalTask -> PublicationTask -> PublicationResult`
+Template branch:
+
+`Upload -> MediaAsset -> AnalysisResult -> ContentDraft -> VoiceAsset -> VideoAsset -> ApprovalTask -> PublicationTask -> PublicationResult`
+
+AI-video branch:
+
+`Upload -> AnalysisResult -> ContentDraft -> ScenePlan -> AIVideoScene -> Final VideoAsset -> ApprovalTask -> PublicationTask -> PublicationResult`
 
 Audit events are written on all state transitions.
 
@@ -79,5 +94,6 @@ Current provider packages:
 - `app.providers.vision`: `mock` and `openrouter`
 - `app.providers.text_generation`: `mock` and `openrouter`
 - `app.providers.tts`: `mock/espeak-ng`, `elevenlabs`, and `yandex_speechkit`
+- `app.providers.ai_video`: `mock`, `kling`, and `runway`
 - `app.providers.video_render`: `ffmpeg` and `creatomate`
 - `app.providers.publishing`: `mock`, `vk`, `instagram_manual`, `yandex_manual`

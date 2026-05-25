@@ -1,3 +1,4 @@
+from app.models.ai_video_scene import AIVideoScene
 from app.models.analysis_result import AnalysisResult
 from app.models.approval_task import ApprovalTask
 from app.models.audit_event import AuditEvent
@@ -8,6 +9,7 @@ from app.models.operator_user import OperatorUser
 from app.models.project import Project
 from app.models.publication_result import PublicationResult
 from app.models.publication_task import PublicationTask
+from app.models.scene_plan import ScenePlan
 from app.models.store_order import StoreOrder
 from app.models.upload import Upload
 from app.models.video_asset import VideoAsset
@@ -15,6 +17,7 @@ from app.models.voice_asset import VoiceAsset
 
 __all__ = [
     "AnalysisResult",
+    "AIVideoScene",
     "ApprovalTask",
     "AuditEvent",
     "CharacterProfile",
@@ -24,6 +27,7 @@ __all__ = [
     "Project",
     "PublicationResult",
     "PublicationTask",
+    "ScenePlan",
     "StoreOrder",
     "Upload",
     "VideoAsset",

@@ -15,12 +15,14 @@ from app.models.approval_task import ApprovalTask
 from app.models.content_draft import ContentDraft
 from app.models.project import Project
 from app.models.media_asset import MediaAsset
+from app.models.scene_plan import ScenePlan
 from app.models.upload import Upload
 from app.models.video_asset import VideoAsset
 from app.models.voice_asset import VoiceAsset
 from app.schemas.upload import UploadTimelineEvent
 from app.services.audit import log_event
 from app.services.publications import list_publication_results, list_publication_tasks
+from app.services.scene_plans import list_scenes
 from app.services.storage import download_bytes, upload_bytes
 from shared.enums import AssetKind, PipelineStatus
 
@@ -205,6 +207,7 @@ def get_upload_pipeline_summary(db: Session, upload_id: UUID) -> dict:
         .all()
     )
     publication_tasks = list_publication_tasks(db, upload_id=upload_id)
+    scene_plans = db.query(ScenePlan).filter(ScenePlan.upload_id == upload_id).order_by(ScenePlan.created_at.desc()).all()
     return {
         "upload": upload,
         "analysis_results": analysis_results,
@@ -212,6 +215,8 @@ def get_upload_pipeline_summary(db: Session, upload_id: UUID) -> dict:
         "approvals": approvals,
         "publication_tasks": publication_tasks,
         "publication_results": list_publication_results(db, [task.id for task in publication_tasks]),
+        "scene_plans": scene_plans,
+        "scene_plan_scenes": {plan.id: list_scenes(db, plan.id) for plan in scene_plans},
         "assets": get_upload_assets(db, upload_id),
         "timeline": get_upload_timeline(db, upload_id),
     }

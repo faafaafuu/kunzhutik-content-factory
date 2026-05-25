@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from app.schemas.common import ORMModel
 from app.schemas.publication import PublicationTaskWithResults
+from app.schemas.scene_plan import ScenePlanDetail
 from shared.enums import ApprovalStatus, ContentPlatform, DraftKind
 from shared.enums import PipelineStatus
 
@@ -103,5 +104,6 @@ class UploadPipelineSummary(BaseModel):
     drafts: list[UploadDraftRead]
     approvals: list[UploadApprovalRead]
     publication_tasks: list[PublicationTaskWithResults]
+    scene_plans: list[ScenePlanDetail] = []
     assets: list[UploadAssetRead]
     timeline: list[UploadTimelineEvent]

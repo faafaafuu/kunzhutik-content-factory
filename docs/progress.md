@@ -6,7 +6,7 @@ Working vertical slice is preserved:
 
 `Upload -> MediaAsset -> AnalysisResult -> ContentDraft -> VoiceAsset / VideoAsset -> ApprovalTask -> PublicationTask -> PublicationResult`
 
-Current step: Stage 9 complete, real generation guardrails.
+Current step: Stage 10 complete, AI-video scene planning foundation.
 
 ## Done
 
@@ -36,6 +36,7 @@ Current step: Stage 9 complete, real generation guardrails.
 - Provider diagnostics endpoint and dashboard panel for selected/effective provider status, fallback mode, and missing env names without exposing secrets.
 - Real generation guardrails: `GENERATION_PROFILE=production` now fails before pipeline generation unless OpenRouter text, real TTS, Creatomate video, and fallback-off settings are configured.
 - Improved local ffmpeg fallback readability with line wrapping, safer text layout, contrast/saturation pass, and vignette.
+- AI-video foundation: `ScenePlan`, `AIVideoScene`, `AIVideoProvider`, mock scene generation, scene-plan endpoints, pipeline summary integration, and dashboard AI Video block.
 
 ## In Progress
 
@@ -43,8 +44,9 @@ Current step: Stage 9 complete, real generation guardrails.
 
 ## Next
 
-- Configure real provider credentials on the server: OpenRouter for text/vision, ElevenLabs or Yandex SpeechKit for voice, and Creatomate for short-form video.
-- Run a real-provider smoke upload with `GENERATION_PROFILE=production`.
+- Connect real AI-video provider adapter: Kling first, Runway second.
+- Extend TextGenerationProvider with real `generate_scene_plan()` via OpenRouter.
+- Add Telegram actions for regenerate scene/full AI video.
 - Real VK media upload support for photos/videos after generation quality is fixed.
 
 ## Blockers
@@ -54,6 +56,8 @@ Current step: Stage 9 complete, real generation guardrails.
 - Real ElevenLabs TTS requires `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID`.
 - Real Yandex SpeechKit TTS requires `YANDEX_SPEECHKIT_API_KEY` and `YANDEX_SPEECHKIT_FOLDER_ID`.
 - Real Creatomate rendering requires `CREATOMATE_API_KEY` and template ids.
+- Real Kling AI-video requires `KLING_API_KEY` and provider-specific API contract.
+- Real Runway AI-video requires `RUNWAY_API_KEY` and provider-specific API contract.
 - Real VK publishing requires `VK_ACCESS_TOKEN` and `VK_GROUP_ID`.
 - Current Docker runtime still uses local/default providers until `.env` is updated and containers are recreated.
 
@@ -90,3 +94,7 @@ Current step: Stage 9 complete, real generation guardrails.
 - 2026-05-25: Verified Docker API/worker rebuild, Alembic upgrade, health check, diagnostics production readiness flags, and production fail-fast validation.
 - 2026-05-25: Stage 9 local commit created, push still blocked; local branch remains ahead of `origin/main`.
 - 2026-05-25: GitHub token provided; pushed all local commits to `origin/main`.
+- 2026-05-25: Added `ScenePlan` and `AIVideoScene` models with migration.
+- 2026-05-25: Added `AIVideoProvider` package with mock, Kling stub, and Runway stub.
+- 2026-05-25: Added scene-plan create/list/detail/regenerate/generate-scenes/render-final-video endpoints and dashboard AI Video block.
+- 2026-05-25: Verified Python compile, admin JavaScript syntax, Docker API/worker rebuild, Alembic upgrade, health check, ScenePlan creation, mock scene generation, final VideoAsset render, pipeline summary integration, and single-scene regenerate.
