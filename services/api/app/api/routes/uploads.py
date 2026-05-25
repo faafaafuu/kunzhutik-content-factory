@@ -1,4 +1,5 @@
 from uuid import UUID
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile, status
 from sqlalchemy.orm import Session
@@ -132,5 +133,6 @@ def download_asset(
     user: OperatorUser = Depends(require_operator),
 ) -> Response:
     asset, content = get_upload_asset_bytes(db, upload_id, asset_id)
-    headers = {"Content-Disposition": f'inline; filename="{asset.file_name}"'}
+    safe_ascii_name = quote(asset.file_name.encode("utf-8"))
+    headers = {"Content-Disposition": f"inline; filename*=UTF-8''{safe_ascii_name}"}
     return Response(content=content, media_type=asset.mime_type, headers=headers)

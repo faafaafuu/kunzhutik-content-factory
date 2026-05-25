@@ -6,7 +6,7 @@ Working vertical slice is preserved:
 
 `Upload -> MediaAsset -> AnalysisResult -> ContentDraft -> VoiceAsset / VideoAsset -> ApprovalTask -> PublicationTask -> PublicationResult`
 
-Current step: Stage 10 complete, AI-video scene planning foundation.
+Current step: Stage 10 complete, AI-video scene planning foundation; AI-video dashboard one-click generation bugfix applied.
 
 ## Done
 
@@ -37,6 +37,8 @@ Current step: Stage 10 complete, AI-video scene planning foundation.
 - Real generation guardrails: `GENERATION_PROFILE=production` now fails before pipeline generation unless OpenRouter text, real TTS, Creatomate video, and fallback-off settings are configured.
 - Improved local ffmpeg fallback readability with line wrapping, safer text layout, contrast/saturation pass, and vignette.
 - AI-video foundation: `ScenePlan`, `AIVideoScene`, `AIVideoProvider`, mock scene generation, scene-plan endpoints, pipeline summary integration, and dashboard AI Video block.
+- AI-video dashboard fix: one action can now create a ScenePlan, generate scenes, and render the final video instead of stopping at queued scenes.
+- Unicode asset download fix: Cyrillic filenames now use RFC 5987 `filename*` encoding and no longer crash response headers.
 
 ## In Progress
 
@@ -98,3 +100,6 @@ Current step: Stage 10 complete, AI-video scene planning foundation.
 - 2026-05-25: Added `AIVideoProvider` package with mock, Kling stub, and Runway stub.
 - 2026-05-25: Added scene-plan create/list/detail/regenerate/generate-scenes/render-final-video endpoints and dashboard AI Video block.
 - 2026-05-25: Verified Python compile, admin JavaScript syntax, Docker API/worker rebuild, Alembic upgrade, health check, ScenePlan creation, mock scene generation, final VideoAsset render, pipeline summary integration, and single-scene regenerate.
+- 2026-05-25: Fixed AI Video dashboard flow so `Generate full AI video` runs scene-plan creation, scene generation, and final rendering in sequence.
+- 2026-05-25: Fixed asset download headers for Unicode filenames with `filename*=UTF-8''...`.
+- 2026-05-25: Verified health check, Alembic upgrade, Python compile, admin JavaScript syntax, AI scene generation, final VideoAsset render for existing ScenePlan, pipeline summary, and Cyrillic asset download.

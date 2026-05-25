@@ -220,7 +220,7 @@ function renderAIVideo(scenePlans, drafts) {
       <p class="eyebrow">AI Video</p>
       <p class="muted">ScenePlan еще не создан. Старый template video pipeline при этом остается рабочим.</p>
       <div class="card-actions">
-        <button type="button" data-ai-video-action="create-plan" ${drafts.length ? "" : "disabled"}>Generate scene plan</button>
+        <button type="button" data-ai-video-action="create-full-video" ${drafts.length ? "" : "disabled"}>Generate full AI video</button>
       </div>
     `;
   }
@@ -254,6 +254,7 @@ function renderAIVideo(scenePlans, drafts) {
       <button type="button" data-ai-video-action="regenerate-plan" data-scene-plan-id="${latest.id}">Regenerate scene plan</button>
       <button type="button" data-ai-video-action="generate-scenes" data-scene-plan-id="${latest.id}">Generate scenes</button>
       <button type="button" data-ai-video-action="render-final" data-scene-plan-id="${latest.id}">Render final video</button>
+      <button type="button" data-ai-video-action="generate-full-video" data-scene-plan-id="${latest.id}">Generate full AI video</button>
     </div>
   `;
 }
@@ -406,12 +407,14 @@ function bindPipelineActions() {
       button.disabled = true;
       const action = button.dataset.aiVideoAction;
       const scenePlanId = button.dataset.scenePlanId;
-      if (action === "create-plan") {
-        await requestJson(`/api/v1/uploads/${state.selectedUploadId}/scene-plans`, {
+      if (action === "create-full-video") {
+        const plan = await requestJson(`/api/v1/uploads/${state.selectedUploadId}/scene-plans`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({}),
         });
+        await requestJson(`/api/v1/scene-plans/${plan.id}/generate-scenes`, { method: "POST" });
+        await requestJson(`/api/v1/scene-plans/${plan.id}/render-final-video`, { method: "POST" });
       } else if (action === "regenerate-plan") {
         await requestJson(`/api/v1/scene-plans/${scenePlanId}/regenerate`, {
           method: "POST",
@@ -421,6 +424,9 @@ function bindPipelineActions() {
       } else if (action === "generate-scenes") {
         await requestJson(`/api/v1/scene-plans/${scenePlanId}/generate-scenes`, { method: "POST" });
       } else if (action === "render-final") {
+        await requestJson(`/api/v1/scene-plans/${scenePlanId}/render-final-video`, { method: "POST" });
+      } else if (action === "generate-full-video") {
+        await requestJson(`/api/v1/scene-plans/${scenePlanId}/generate-scenes`, { method: "POST" });
         await requestJson(`/api/v1/scene-plans/${scenePlanId}/render-final-video`, { method: "POST" });
       }
       await refreshPipeline();
