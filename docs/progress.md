@@ -6,7 +6,7 @@ Working vertical slice is preserved:
 
 `Upload -> MediaAsset -> AnalysisResult -> ContentDraft -> VoiceAsset / VideoAsset -> ApprovalTask -> PublicationTask -> PublicationResult`
 
-Current step: Stage 7 complete, dashboard/provider visibility polish.
+Current step: Stage 8 complete, provider health/config diagnostics.
 
 ## Done
 
@@ -33,6 +33,7 @@ Current step: Stage 7 complete, dashboard/provider visibility polish.
 - Publishing provider architecture with mock publisher, VK adapter, Instagram manual package provider, and Yandex Maps manual package provider.
 - Publication smoke in `PUBLISHER_PROVIDER=mock`: approval created `3` publication tasks and a run completed with `PublicationResult.status=published`.
 - Dashboard provider visibility: pipeline assets now expose `metadata_json`, and admin cards show provider/fallback/error/manual-package details.
+- Provider diagnostics endpoint and dashboard panel for selected/effective provider status, fallback mode, and missing env names without exposing secrets.
 
 ## In Progress
 
@@ -41,7 +42,7 @@ Current step: Stage 7 complete, dashboard/provider visibility polish.
 ## Next
 
 - Real VK media upload support for photos/videos.
-- Provider health/config diagnostics endpoint.
+- Manual package download visibility in dashboard history.
 
 ## Blockers
 
@@ -78,3 +79,5 @@ Current step: Stage 7 complete, dashboard/provider visibility polish.
 - 2026-05-16: Added dashboard provider/fallback visibility for analysis, drafts, assets, and publications.
 - 2026-05-16: Verified Python compile, admin JavaScript syntax, Docker API rebuild, Alembic upgrade, health check, static admin JS, and pipeline metadata exposure.
 - 2026-05-16: Stage 7 local commit created, push still blocked by missing GitHub token.
+- 2026-05-25: Added `/api/v1/providers/diagnostics` and dashboard provider diagnostics panel.
+- 2026-05-25: Verified Python compile, admin JavaScript syntax, Docker API rebuild, Alembic upgrade, health check, and authorized diagnostics response without secrets.

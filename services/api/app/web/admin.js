@@ -3,6 +3,7 @@ const state = {
   uploads: [],
   selectedUploadId: null,
   projects: [],
+  providers: [],
 };
 
 const els = {
@@ -16,6 +17,7 @@ const els = {
   uploadForm: document.getElementById("upload-form"),
   uploadFile: document.getElementById("upload-file"),
   uploadNotes: document.getElementById("upload-notes"),
+  providerDiagnostics: document.getElementById("provider-diagnostics"),
   refreshPipeline: document.getElementById("refresh-pipeline"),
   refreshOrders: document.getElementById("refresh-orders"),
   logoutButton: document.getElementById("logout-button"),
@@ -28,7 +30,7 @@ init().catch(showFatalError);
 async function init() {
   bindChrome();
   await ensureAuth();
-  await Promise.all([loadProjects(), loadUploads(), loadOrders()]);
+  await Promise.all([loadProjects(), loadUploads(), loadOrders(), loadProviderDiagnostics()]);
   if (state.uploads[0]) {
     await selectUpload(state.uploads[0].id);
   } else {
@@ -84,6 +86,36 @@ async function loadUploads() {
   renderUploads();
 }
 
+async function loadProviderDiagnostics() {
+  const payload = await requestJson("/api/v1/providers/diagnostics");
+  state.providers = payload.providers;
+  renderProviderDiagnostics();
+}
+
+function renderProviderDiagnostics() {
+  if (!els.providerDiagnostics) return;
+  if (!state.providers.length) {
+    els.providerDiagnostics.innerHTML = "<p class='eyebrow'>Providers</p><p class='muted'>Нет данных.</p>";
+    return;
+  }
+  els.providerDiagnostics.innerHTML = `
+    <p class="eyebrow">Providers</p>
+    ${state.providers
+      .map((provider) => {
+        const isReady = provider.configured || provider.fallback_enabled;
+        const missing = provider.missing_env.length ? `<br><span class="muted">Missing: ${provider.missing_env.map(escapeHtml).join(", ")}</span>` : "";
+        return `
+          <p>
+            <span class="pill ${isReady ? "good" : "warn"}">${escapeHtml(provider.area)}</span>
+            <span class="pill">${escapeHtml(provider.selected_provider)} → ${escapeHtml(provider.effective_provider)}</span>
+            ${missing}
+          </p>
+        `;
+      })
+      .join("")}
+  `;
+}
+
 function renderUploads() {
   if (!state.uploads.length) {
     els.uploadList.innerHTML = "<div class='admin-card'><p class='muted'>Загрузок пока нет.</p></div>";
@@ -114,7 +146,7 @@ async function selectUpload(uploadId) {
 }
 
 async function refreshPipeline() {
-  await loadUploads();
+  await Promise.all([loadUploads(), loadProviderDiagnostics()]);
   if (state.selectedUploadId) {
     await selectUpload(state.selectedUploadId);
   }
