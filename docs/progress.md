@@ -46,7 +46,7 @@ Current step: Stage 8 complete, provider health/config diagnostics.
 
 ## Blockers
 
-- Push blocked: missing GitHub token in the non-interactive environment. `git push` failed because GitHub requested a password after Stage 1, Stage 2, Stage 3, Stage 4, Stage 5, Stage 6, and Stage 7 commits.
+- Push blocked: missing GitHub token in the non-interactive environment. `git push` failed or hung without updating `origin/main` after Stage 1, Stage 2, Stage 3, Stage 4, Stage 5, Stage 6, Stage 7, and Stage 8 commits.
 - Real OpenRouter vision requires `OPENROUTER_API_KEY` and a multimodal `OPENROUTER_VISION_MODEL`.
 - Real OpenRouter text generation requires `OPENROUTER_API_KEY` and `OPENROUTER_TEXT_MODEL`.
 - Real ElevenLabs TTS requires `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID`.
@@ -81,3 +81,4 @@ Current step: Stage 8 complete, provider health/config diagnostics.
 - 2026-05-16: Stage 7 local commit created, push still blocked by missing GitHub token.
 - 2026-05-25: Added `/api/v1/providers/diagnostics` and dashboard provider diagnostics panel.
 - 2026-05-25: Verified Python compile, admin JavaScript syntax, Docker API rebuild, Alembic upgrade, health check, and authorized diagnostics response without secrets.
+- 2026-05-25: Stage 8 local commit created, push still blocked; local branch remains ahead of `origin/main`.
