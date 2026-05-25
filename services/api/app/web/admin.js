@@ -102,12 +102,13 @@ function renderProviderDiagnostics() {
     <p class="eyebrow">Providers</p>
     ${state.providers
       .map((provider) => {
-        const isReady = provider.configured || provider.fallback_enabled;
+        const isReady = provider.production_ready || provider.configured || provider.fallback_enabled;
         const missing = provider.missing_env.length ? `<br><span class="muted">Missing: ${provider.missing_env.map(escapeHtml).join(", ")}</span>` : "";
         return `
           <p>
             <span class="pill ${isReady ? "good" : "warn"}">${escapeHtml(provider.area)}</span>
             <span class="pill">${escapeHtml(provider.selected_provider)} → ${escapeHtml(provider.effective_provider)}</span>
+            ${provider.production_ready ? `<span class="pill good">production ready</span>` : `<span class="pill warn">dev/mock mode</span>`}
             ${missing}
           </p>
         `;

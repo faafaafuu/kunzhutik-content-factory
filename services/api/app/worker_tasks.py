@@ -19,6 +19,7 @@ from app.models.content_draft import ContentDraft
 from app.models.upload import Upload
 from app.services.audit import log_event
 from app.services.content_generation import build_persona_drafts
+from app.services.generation_readiness import validate_generation_providers_ready
 from app.services.media_generation import generate_media_assets_for_drafts
 from app.services.publications import publish_task_with_provider
 from app.services.vision_analysis import analyze_upload_with_configured_provider
@@ -38,6 +39,7 @@ def process_upload_pipeline(upload_id: str) -> None:
         upload.status = PipelineStatus.processing
         log_event(db, upload.project_id, "upload", str(upload.id), "pipeline.started", "worker", {})
         db.flush()
+        validate_generation_providers_ready()
 
         analysis_payload = analyze_upload_with_configured_provider(upload).model_payload()
         analysis = AnalysisResult(

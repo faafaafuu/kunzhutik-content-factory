@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from app.core.config import settings
 from app.schemas.provider_diagnostics import ProviderDiagnostic
+from app.services.generation_readiness import REAL_TTS_PROVIDERS
 
 
 def get_provider_diagnostics() -> list[ProviderDiagnostic]:
     fallback = settings.enable_provider_fallback
+    production = settings.generation_profile.lower().strip() == "production"
     return [
         _diagnostic(
             area="vision",
@@ -18,6 +20,7 @@ def get_provider_diagnostics() -> list[ProviderDiagnostic]:
                 }
             },
             fallback=fallback,
+            production_ready=True,
             notes=["OpenRouter vision requires a multimodal model."],
         ),
         _diagnostic(
@@ -31,6 +34,10 @@ def get_provider_diagnostics() -> list[ProviderDiagnostic]:
                 }
             },
             fallback=fallback,
+            production_ready=settings.text_provider.lower().strip() == "openrouter"
+            and bool(settings.openrouter_api_key)
+            and bool(settings.openrouter_text_model)
+            and not fallback,
             notes=["Persona copy uses the Kunzhutik prompt layer before validation."],
         ),
         _diagnostic(
@@ -52,6 +59,7 @@ def get_provider_diagnostics() -> list[ProviderDiagnostic]:
                 },
             },
             fallback=fallback,
+            production_ready=_tts_production_ready() and not fallback,
             notes=["Local mock uses espeak-ng in the API/worker image."],
         ),
         _diagnostic(
@@ -65,6 +73,10 @@ def get_provider_diagnostics() -> list[ProviderDiagnostic]:
                 }
             },
             fallback=fallback,
+            production_ready=settings.video_provider.lower().strip() == "creatomate"
+            and bool(settings.creatomate_api_key)
+            and bool(settings.creatomate_template_9_16)
+            and not fallback,
             notes=["Creatomate can return external URLs; the pipeline downloads them into object storage."],
         ),
         _diagnostic(
@@ -78,6 +90,7 @@ def get_provider_diagnostics() -> list[ProviderDiagnostic]:
                 }
             },
             fallback=fallback,
+            production_ready=not production or settings.publisher_provider.lower().strip() in {"vk", "manual", "manual_package"},
             notes=["When PUBLISHER_PROVIDER=vk, Instagram/Yandex tasks use manual package providers."],
         ),
     ]
@@ -90,6 +103,7 @@ def _diagnostic(
     local: set[str],
     required: dict[str, dict[str, str | None]],
     fallback: bool,
+    production_ready: bool,
     notes: list[str],
 ) -> ProviderDiagnostic:
     normalized = selected.lower().strip()
@@ -102,7 +116,17 @@ def _diagnostic(
         selected_provider=normalized,
         effective_provider=effective,
         configured=configured,
+        production_ready=production_ready,
         fallback_enabled=fallback,
         missing_env=missing,
         notes=notes,
     )
+
+
+def _tts_production_ready() -> bool:
+    provider = settings.tts_provider.lower().strip()
+    if provider not in REAL_TTS_PROVIDERS:
+        return False
+    if provider == "elevenlabs":
+        return bool(settings.elevenlabs_api_key and settings.elevenlabs_voice_id)
+    return bool(settings.yandex_speechkit_api_key and settings.yandex_speechkit_folder_id)

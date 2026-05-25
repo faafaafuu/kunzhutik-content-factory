@@ -6,7 +6,7 @@ Working vertical slice is preserved:
 
 `Upload -> MediaAsset -> AnalysisResult -> ContentDraft -> VoiceAsset / VideoAsset -> ApprovalTask -> PublicationTask -> PublicationResult`
 
-Current step: Stage 8 complete, provider health/config diagnostics.
+Current step: Stage 9 complete, real generation guardrails.
 
 ## Done
 
@@ -34,6 +34,8 @@ Current step: Stage 8 complete, provider health/config diagnostics.
 - Publication smoke in `PUBLISHER_PROVIDER=mock`: approval created `3` publication tasks and a run completed with `PublicationResult.status=published`.
 - Dashboard provider visibility: pipeline assets now expose `metadata_json`, and admin cards show provider/fallback/error/manual-package details.
 - Provider diagnostics endpoint and dashboard panel for selected/effective provider status, fallback mode, and missing env names without exposing secrets.
+- Real generation guardrails: `GENERATION_PROFILE=production` now fails before pipeline generation unless OpenRouter text, real TTS, Creatomate video, and fallback-off settings are configured.
+- Improved local ffmpeg fallback readability with line wrapping, safer text layout, contrast/saturation pass, and vignette.
 
 ## In Progress
 
@@ -41,8 +43,9 @@ Current step: Stage 8 complete, provider health/config diagnostics.
 
 ## Next
 
-- Real VK media upload support for photos/videos.
-- Manual package download visibility in dashboard history.
+- Configure real provider credentials on the server: OpenRouter for text/vision, ElevenLabs or Yandex SpeechKit for voice, and Creatomate for short-form video.
+- Run a real-provider smoke upload with `GENERATION_PROFILE=production`.
+- Real VK media upload support for photos/videos after generation quality is fixed.
 
 ## Blockers
 
@@ -53,6 +56,7 @@ Current step: Stage 8 complete, provider health/config diagnostics.
 - Real Yandex SpeechKit TTS requires `YANDEX_SPEECHKIT_API_KEY` and `YANDEX_SPEECHKIT_FOLDER_ID`.
 - Real Creatomate rendering requires `CREATOMATE_API_KEY` and template ids.
 - Real VK publishing requires `VK_ACCESS_TOKEN` and `VK_GROUP_ID`.
+- Current Docker runtime still uses local/default providers until `.env` is updated and containers are recreated.
 
 ## Changelog
 
@@ -82,3 +86,6 @@ Current step: Stage 8 complete, provider health/config diagnostics.
 - 2026-05-25: Added `/api/v1/providers/diagnostics` and dashboard provider diagnostics panel.
 - 2026-05-25: Verified Python compile, admin JavaScript syntax, Docker API rebuild, Alembic upgrade, health check, and authorized diagnostics response without secrets.
 - 2026-05-25: Stage 8 local commit created, push still blocked; local branch remains ahead of `origin/main`.
+- 2026-05-25: Added `GENERATION_PROFILE=production` guardrails and `.env.production.example`.
+- 2026-05-25: Improved ffmpeg fallback text layout for readable local preview renders.
+- 2026-05-25: Verified Docker API/worker rebuild, Alembic upgrade, health check, diagnostics production readiness flags, and production fail-fast validation.

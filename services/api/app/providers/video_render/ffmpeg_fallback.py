@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 import tempfile
+import textwrap
 from pathlib import Path
 
 from app.providers.video_render.base import VideoRenderProvider
@@ -114,17 +115,35 @@ def _render_vertical_video(
 ) -> None:
     preset = get_template_preset(content.kind)
     mascot_text = _escape_drawtext("Кунжутик")
-    title_text = _escape_drawtext(content.title.strip()[:72])
-    subtitle_text = _escape_drawtext(content.subtitle.strip()[:88])
     subtitle_color = "white" if content.kind != "story" else "#27140d"
     draw_filters = ",".join(
         [
+            "eq=contrast=1.06:saturation=1.12:brightness=-0.015",
+            "vignette=PI/5",
             preset["top_box"],
             preset["bottom_box"],
             f"drawtext=fontfile={FONT_PATH}:text='{mascot_text}':fontcolor=white:fontsize=40:x=54:y=62",
             f"drawtext=fontfile={FONT_PATH}:text='{_escape_drawtext(preset['cta_label'])}':fontcolor=#ffd08a:fontsize=24:x=54:y=88",
-            f"drawtext=fontfile={FONT_PATH}:text='{title_text}':fontcolor=white:fontsize={preset['title_size']}:x=54:y={preset['title_y']}",
-            f"drawtext=fontfile={FONT_PATH}:text='{subtitle_text}':fontcolor={subtitle_color}:fontsize={preset['subtitle_size']}:x=54:y={preset['subtitle_y']}",
+            *_drawtext_lines(
+                content.title,
+                font_size=preset["title_size"],
+                font_color="white",
+                x=54,
+                y=preset["title_y"],
+                max_chars=24,
+                max_lines=2,
+                line_gap=8,
+            ),
+            *_drawtext_lines(
+                content.subtitle,
+                font_size=preset["subtitle_size"],
+                font_color=subtitle_color,
+                x=54,
+                y=preset["subtitle_y"],
+                max_chars=30,
+                max_lines=3,
+                line_gap=7,
+            ),
         ]
     )
     if source_path and source_path.exists():
@@ -188,6 +207,25 @@ def _render_preview_frame(video_path: Path, preview_path: Path) -> None:
         text=True,
         timeout=20,
     )
+
+
+def _drawtext_lines(
+    value: str,
+    *,
+    font_size: int,
+    font_color: str,
+    x: int,
+    y: int,
+    max_chars: int,
+    max_lines: int,
+    line_gap: int,
+) -> list[str]:
+    normalized = " ".join(value.strip().split())
+    lines = textwrap.wrap(normalized, width=max_chars, max_lines=max_lines, placeholder="…") or [normalized[:max_chars]]
+    return [
+        f"drawtext=fontfile={FONT_PATH}:text='{_escape_drawtext(line)}':fontcolor={font_color}:fontsize={font_size}:x={x}:y={y + index * (font_size + line_gap)}"
+        for index, line in enumerate(lines)
+    ]
 
 
 def _escape_drawtext(value: str) -> str:

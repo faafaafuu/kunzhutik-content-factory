@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     dashboard_bootstrap_password: str | None = Field(default=None, alias="DASHBOARD_BOOTSTRAP_PASSWORD")
     dashboard_bootstrap_role: str = Field(default="admin", alias="DASHBOARD_BOOTSTRAP_ROLE")
 
+    generation_profile: str = Field(default="local", alias="GENERATION_PROFILE")
     vision_provider: str = Field(default="mock", alias="VISION_PROVIDER")
     enable_provider_fallback: bool = Field(default=True, alias="ENABLE_PROVIDER_FALLBACK")
     openrouter_api_key: str | None = Field(default=None, alias="OPENROUTER_API_KEY")

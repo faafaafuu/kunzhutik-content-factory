@@ -6,6 +6,7 @@ class ProviderDiagnostic(BaseModel):
     selected_provider: str
     effective_provider: str
     configured: bool
+    production_ready: bool
     fallback_enabled: bool
     missing_env: list[str]
     notes: list[str]
