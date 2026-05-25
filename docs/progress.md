@@ -49,7 +49,7 @@ Current step: Stage 9 complete, real generation guardrails.
 
 ## Blockers
 
-- Push blocked: missing GitHub token in the non-interactive environment. `git push` failed or hung without updating `origin/main` after Stage 1, Stage 2, Stage 3, Stage 4, Stage 5, Stage 6, Stage 7, and Stage 8 commits.
+- Push blocked: missing GitHub token in the non-interactive environment. `git push` failed or hung without updating `origin/main` after Stage 1, Stage 2, Stage 3, Stage 4, Stage 5, Stage 6, Stage 7, Stage 8, and Stage 9 commits.
 - Real OpenRouter vision requires `OPENROUTER_API_KEY` and a multimodal `OPENROUTER_VISION_MODEL`.
 - Real OpenRouter text generation requires `OPENROUTER_API_KEY` and `OPENROUTER_TEXT_MODEL`.
 - Real ElevenLabs TTS requires `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID`.
@@ -89,3 +89,4 @@ Current step: Stage 9 complete, real generation guardrails.
 - 2026-05-25: Added `GENERATION_PROFILE=production` guardrails and `.env.production.example`.
 - 2026-05-25: Improved ffmpeg fallback text layout for readable local preview renders.
 - 2026-05-25: Verified Docker API/worker rebuild, Alembic upgrade, health check, diagnostics production readiness flags, and production fail-fast validation.
+- 2026-05-25: Stage 9 local commit created, push still blocked; local branch remains ahead of `origin/main`.
