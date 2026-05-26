@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     yandex_speechkit_voice: str = Field(default="alena", alias="YANDEX_SPEECHKIT_VOICE")
 
     video_provider: str = Field(default="ffmpeg", alias="VIDEO_PROVIDER")
-    video_mode: str = Field(default="template", alias="VIDEO_MODE")
+    video_mode: str = Field(default="ai_video", alias="VIDEO_MODE")
     video_render_timeout_seconds: float = Field(default=120.0, alias="VIDEO_RENDER_TIMEOUT_SECONDS")
     creatomate_api_key: str | None = Field(default=None, alias="CREATOMATE_API_KEY")
     creatomate_template_9_16: str | None = Field(default=None, alias="CREATOMATE_TEMPLATE_9_16")

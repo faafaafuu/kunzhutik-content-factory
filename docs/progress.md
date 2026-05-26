@@ -6,7 +6,7 @@ Working vertical slice is preserved:
 
 `Upload -> MediaAsset -> AnalysisResult -> ContentDraft -> VoiceAsset / VideoAsset -> ApprovalTask -> PublicationTask -> PublicationResult`
 
-Current step: Stage 10 complete, AI-video scene planning foundation; AI-video dashboard one-click generation bugfix applied.
+Current step: Stage 10 complete, AI-video mode is now the primary upload pipeline; template rendering remains available behind `VIDEO_MODE=template`.
 
 ## Done
 
@@ -39,6 +39,8 @@ Current step: Stage 10 complete, AI-video scene planning foundation; AI-video da
 - AI-video foundation: `ScenePlan`, `AIVideoScene`, `AIVideoProvider`, mock scene generation, scene-plan endpoints, pipeline summary integration, and dashboard AI Video block.
 - AI-video dashboard fix: one action can now create a ScenePlan, generate scenes, and render the final video instead of stopping at queued scenes.
 - Unicode asset download fix: Cyrillic filenames now use RFC 5987 `filename*` encoding and no longer crash response headers.
+- Upload pipeline now respects `VIDEO_MODE`: `ai_video` creates ScenePlan, AI-video scenes, VoiceAsset, final VideoAsset, and approval; `template` keeps the legacy ffmpeg/Creatomate branch.
+- Final AI-video assembly now attaches the generated VoiceAsset and adds scene subtitles/CTA while using ffmpeg only as the assembly layer.
 
 ## In Progress
 
@@ -46,7 +48,7 @@ Current step: Stage 10 complete, AI-video scene planning foundation; AI-video da
 
 ## Next
 
-- Connect real AI-video provider adapter: Kling first, Runway second.
+- Connect real AI-video provider adapter: Kling first, Runway second. Current local `AI_VIDEO_PROVIDER=mock` proves orchestration only and does not produce real 3D animation.
 - Extend TextGenerationProvider with real `generate_scene_plan()` via OpenRouter.
 - Add Telegram actions for regenerate scene/full AI video.
 - Real VK media upload support for photos/videos after generation quality is fixed.
@@ -103,3 +105,7 @@ Current step: Stage 10 complete, AI-video scene planning foundation; AI-video da
 - 2026-05-25: Fixed AI Video dashboard flow so `Generate full AI video` runs scene-plan creation, scene generation, and final rendering in sequence.
 - 2026-05-25: Fixed asset download headers for Unicode filenames with `filename*=UTF-8''...`.
 - 2026-05-25: Verified health check, Alembic upgrade, Python compile, admin JavaScript syntax, AI scene generation, final VideoAsset render for existing ScenePlan, pipeline summary, and Cyrillic asset download.
+- 2026-05-26: Switched the primary worker path to `VIDEO_MODE=ai_video`; legacy template rendering now runs only when `VIDEO_MODE=template`.
+- 2026-05-26: Added AI-video upload orchestration: ScenePlan creation, AIVideoProvider scene generation, VoiceAsset generation, final VideoAsset assembly with subtitles/CTA, and approval creation.
+- 2026-05-26: Updated production guardrails so `GENERATION_PROFILE=production` rejects mock AI-video providers in `VIDEO_MODE=ai_video`.
+- 2026-05-26: Verified Python compile, admin JavaScript syntax, Docker API/worker rebuild, Alembic upgrade, health check, runtime `VIDEO_MODE=ai_video`, and full upload smoke: 1 ScenePlan, 4 generated scenes, 1 VoiceAsset, 1 final `ai-final-video.mp4`, 1 ApprovalTask.

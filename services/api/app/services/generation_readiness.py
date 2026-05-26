@@ -4,6 +4,7 @@ from app.core.config import settings
 
 
 REAL_TTS_PROVIDERS = {"elevenlabs", "yandex_speechkit", "yandex-speechkit", "yandex"}
+REAL_AI_VIDEO_PROVIDERS = {"kling", "runway", "pika", "luma"}
 
 
 def validate_generation_providers_ready() -> None:
@@ -31,12 +32,24 @@ def validate_generation_providers_ready() -> None:
         if not settings.yandex_speechkit_folder_id:
             missing.append("YANDEX_SPEECHKIT_FOLDER_ID")
 
-    if settings.video_provider.lower().strip() != "creatomate":
-        missing.append("VIDEO_PROVIDER=creatomate")
-    if not settings.creatomate_api_key:
-        missing.append("CREATOMATE_API_KEY")
-    if not settings.creatomate_template_9_16:
-        missing.append("CREATOMATE_TEMPLATE_9_16")
+    video_mode = settings.video_mode.lower().strip()
+    if video_mode == "ai_video":
+        ai_video_provider = settings.ai_video_provider.lower().strip()
+        if ai_video_provider not in REAL_AI_VIDEO_PROVIDERS:
+            missing.append("AI_VIDEO_PROVIDER=kling or runway")
+        elif ai_video_provider == "kling" and not settings.kling_api_key:
+            missing.append("KLING_API_KEY")
+        elif ai_video_provider == "runway" and not settings.runway_api_key:
+            missing.append("RUNWAY_API_KEY")
+    elif video_mode == "template":
+        if settings.video_provider.lower().strip() != "creatomate":
+            missing.append("VIDEO_PROVIDER=creatomate")
+        if not settings.creatomate_api_key:
+            missing.append("CREATOMATE_API_KEY")
+        if not settings.creatomate_template_9_16:
+            missing.append("CREATOMATE_TEMPLATE_9_16")
+    else:
+        missing.append("VIDEO_MODE=ai_video or template")
 
     if settings.enable_provider_fallback:
         missing.append("ENABLE_PROVIDER_FALLBACK=false")

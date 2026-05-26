@@ -22,6 +22,7 @@ from app.services.content_generation import build_persona_drafts
 from app.services.generation_readiness import validate_generation_providers_ready
 from app.services.media_generation import generate_media_assets_for_drafts
 from app.services.publications import publish_task_with_provider
+from app.services.scene_plans import generate_ai_video_assets_for_upload
 from app.services.vision_analysis import analyze_upload_with_configured_provider
 from shared.enums import ApprovalStatus, PipelineStatus
 
@@ -90,7 +91,15 @@ def process_upload_pipeline(upload_id: str) -> None:
             {"draft_count": len(drafts)},
         )
 
-        generate_media_assets_for_drafts(db, upload, drafts)
+        video_mode = settings.video_mode.lower().strip()
+        if video_mode == "ai_video":
+            scene_plan = generate_ai_video_assets_for_upload(db, upload, drafts)
+            creative_payload = {"video_mode": "ai_video", "scene_plan_id": str(scene_plan.id), "draft_count": len(drafts)}
+        elif video_mode == "template":
+            generate_media_assets_for_drafts(db, upload, drafts)
+            creative_payload = {"video_mode": "template", "draft_count": len(drafts)}
+        else:
+            raise ValueError(f"Unsupported VIDEO_MODE: {settings.video_mode}")
         log_event(
             db,
             upload.project_id,
@@ -98,7 +107,7 @@ def process_upload_pipeline(upload_id: str) -> None:
             str(upload.id),
             "creative_render.completed",
             "worker",
-            {"draft_count": len(drafts)},
+            creative_payload,
         )
 
         approval = ApprovalTask(
@@ -120,7 +129,8 @@ def process_upload_pipeline(upload_id: str) -> None:
                     for draft in drafts
                 ],
                 "mock": analysis.provider.startswith("mock"),
-                "video_template": "mascot_story_v1",
+                "video_mode": video_mode,
+                "video_template": "ai_video_scene_sequence_v1" if video_mode == "ai_video" else "mascot_story_v1",
             },
         )
         db.add(approval)

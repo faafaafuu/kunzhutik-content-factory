@@ -47,7 +47,8 @@
 - `AIVideoScene` tracks per-scene generation status and media asset output
 - `AIVideoProvider` owns animated scene generation: character movement, emotion, camera, and mini-story beats
 - current MVP provider is `mock`; future providers are `kling`, `runway`, then `pika`/`luma`
-- `VIDEO_MODE=template` keeps the old ffmpeg/Creatomate branch; `VIDEO_MODE=ai_video` enables scene-plan workflows
+- `VIDEO_MODE=ai_video` is the primary upload pipeline: drafts create one ScenePlan, AIVideoProvider generates 3-4 animated scenes, TTS creates VoiceAsset, and final assembly only stitches scenes/subtitles/CTA
+- `VIDEO_MODE=template` keeps the old ffmpeg/Creatomate story branch as a fallback
 
 ### Voice
 

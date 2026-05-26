@@ -47,9 +47,14 @@ def generate_media_assets_for_drafts(db: Session, upload: Upload, drafts: list[C
                 source_path = tmp_dir / f"source{source_suffix}"
                 source_path.write_bytes(source_bytes)
 
-            tts_result = get_tts_provider().synthesize(script_text, {"voice_name": VOICE_NAME, "speed": "155"})
-            voice_path = _write_tts_result(tts_result, tmp_dir)
-            duration_seconds = _tts_duration_seconds(tts_result, voice_path)
+            voice_asset, voice_path, tts_result, duration_seconds = _generate_voice_asset_for_draft_in_dir(
+                db=db,
+                upload=upload,
+                draft=draft,
+                script_text=script_text,
+                tmp_dir=tmp_dir,
+                actor="worker",
+            )
 
             render_result = get_video_render_provider().render(
                 source_image_url=str(source_path) if source_path else None,
@@ -61,30 +66,6 @@ def generate_media_assets_for_drafts(db: Session, upload: Upload, drafts: list[C
             )
             video_path = _write_render_output(render_result.video_bytes, render_result.video_url, tmp_dir / "video.mp4")
             preview_path = _write_render_output(render_result.preview_bytes, render_result.preview_url, tmp_dir / "preview.jpg")
-
-            voice_media = _create_media_asset(
-                db=db,
-                upload=upload,
-                draft=draft,
-                kind=AssetKind.voice,
-                file_path=voice_path,
-                file_name=f"{draft.kind.value}-voice{voice_path.suffix}",
-                mime_type=tts_result.mime_type,
-                duration_seconds=duration_seconds,
-                metadata=tts_result.raw_response,
-            )
-            voice_asset = VoiceAsset(
-                project_id=upload.project_id,
-                content_draft_id=draft.id,
-                status=PipelineStatus.completed,
-                provider=tts_result.provider,
-                voice_name=tts_result.voice_id or VOICE_NAME,
-                speaking_rate=Decimal("1.00"),
-                asset_id=voice_media.id,
-                transcript=script_text,
-            )
-            db.add(voice_asset)
-            db.flush()
 
             video_media = _create_media_asset(
                 db=db,
@@ -135,7 +116,7 @@ def generate_media_assets_for_drafts(db: Session, upload: Upload, drafts: list[C
                 str(upload.id),
                 "voice_asset.created",
                 "worker",
-                {"content_draft_id": str(draft.id), "voice_asset_id": str(voice_asset.id), "media_asset_id": str(voice_media.id)},
+                {"content_draft_id": str(draft.id), "voice_asset_id": str(voice_asset.id), "media_asset_id": str(voice_asset.asset_id)},
             )
             log_event(
                 db,
@@ -146,6 +127,60 @@ def generate_media_assets_for_drafts(db: Session, upload: Upload, drafts: list[C
                 "worker",
                 {"content_draft_id": str(draft.id), "video_asset_id": str(video_asset.id), "media_asset_id": str(video_media.id)},
             )
+
+
+def generate_voice_asset_for_draft(db: Session, upload: Upload, draft: ContentDraft, *, actor: str = "worker") -> VoiceAsset:
+    script_text = draft.script_text or draft.long_text or draft.caption
+    if not script_text:
+        raise ValueError(f"ContentDraft {draft.id} has no script text for TTS")
+    with tempfile.TemporaryDirectory(prefix="kunzhutik-voice-") as tmp_dir_name:
+        voice_asset, _, _, _ = _generate_voice_asset_for_draft_in_dir(
+            db=db,
+            upload=upload,
+            draft=draft,
+            script_text=script_text,
+            tmp_dir=Path(tmp_dir_name),
+            actor=actor,
+        )
+    return voice_asset
+
+
+def _generate_voice_asset_for_draft_in_dir(
+    db: Session,
+    upload: Upload,
+    draft: ContentDraft,
+    script_text: str,
+    tmp_dir: Path,
+    *,
+    actor: str,
+) -> tuple[VoiceAsset, Path, TTSResult, Decimal]:
+    tts_result = get_tts_provider().synthesize(script_text, {"voice_name": VOICE_NAME, "speed": "155"})
+    voice_path = _write_tts_result(tts_result, tmp_dir)
+    duration_seconds = _tts_duration_seconds(tts_result, voice_path)
+    voice_media = _create_media_asset(
+        db=db,
+        upload=upload,
+        draft=draft,
+        kind=AssetKind.voice,
+        file_path=voice_path,
+        file_name=f"{draft.kind.value}-voice{voice_path.suffix}",
+        mime_type=tts_result.mime_type,
+        duration_seconds=duration_seconds,
+        metadata={**tts_result.raw_response, "video_mode": settings.video_mode, "actor": actor},
+    )
+    voice_asset = VoiceAsset(
+        project_id=upload.project_id,
+        content_draft_id=draft.id,
+        status=PipelineStatus.completed,
+        provider=tts_result.provider,
+        voice_name=tts_result.voice_id or VOICE_NAME,
+        speaking_rate=Decimal("1.00"),
+        asset_id=voice_media.id,
+        transcript=script_text,
+    )
+    db.add(voice_asset)
+    db.flush()
+    return voice_asset, voice_path, tts_result, duration_seconds
 
 
 def _create_media_asset(
