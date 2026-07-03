@@ -48,11 +48,12 @@ def regenerate_content_draft(
         raise HTTPException(status_code=409, detail="Project has no character profile")
 
     next_version = _next_draft_version(db, previous)
+    shared_story = bool((previous.metadata_json or {}).get("shared_story"))
     generated = get_text_generation_provider().generate_content(
         analysis=_analysis_to_vision_result(analysis),
         character_profile=character,
-        platform=previous.platform.value,
-        kind=previous.kind.value,
+        platform="all" if shared_story else previous.platform.value,
+        kind="story" if shared_story else previous.kind.value,
         context={
             "mode": "regenerate",
             "reason": reason,
@@ -61,10 +62,16 @@ def regenerate_content_draft(
             "analysis_result_id": str(analysis.id),
         },
     )
-    payload = _generated_to_content_draft_payload(generated, analysis.provider)
+    payload = _generated_to_content_draft_payload(
+        generated,
+        analysis.provider,
+        platform=previous.platform if shared_story else None,
+        kind=previous.kind if shared_story else None,
+    )
     metadata = payload.pop("metadata_json")
     metadata.update(
         {
+            "shared_story": shared_story,
             "regenerated_from_draft_id": str(previous.id),
             "regenerate_reason": reason,
         }
@@ -82,6 +89,41 @@ def regenerate_content_draft(
     )
     db.add(draft)
     db.flush()
+
+    sibling_ids: list[str] = []
+    if shared_story:
+        # Одна публикация на все площадки: обновляем копии истории у остальных драфтов.
+        siblings = (
+            db.query(ContentDraft)
+            .filter(
+                ContentDraft.upload_id == previous.upload_id,
+                ContentDraft.id != previous.id,
+            )
+            .all()
+        )
+        latest_by_target: dict[tuple, ContentDraft] = {}
+        for row in siblings:
+            key = (row.platform, row.kind)
+            if key == (previous.platform, previous.kind):
+                continue
+            if (row.metadata_json or {}).get("shared_story") and (key not in latest_by_target or row.version > latest_by_target[key].version):
+                latest_by_target[key] = row
+        for (platform, kind), source in latest_by_target.items():
+            sibling_payload = {**payload, "platform": platform, "kind": kind}
+            sibling = ContentDraft(
+                project_id=previous.project_id,
+                upload_id=previous.upload_id,
+                analysis_result_id=analysis.id,
+                status=PipelineStatus.completed,
+                version=_next_draft_version(db, source),
+                persona_name=character.name,
+                metadata_json={**metadata, "regenerated_from_draft_id": str(source.id)},
+                **sibling_payload,
+            )
+            db.add(sibling)
+            db.flush()
+            sibling_ids.append(str(sibling.id))
+
     log_event(
         db,
         previous.project_id,
@@ -96,6 +138,8 @@ def regenerate_content_draft(
             "kind": previous.kind.value,
             "version": next_version,
             "reason": reason,
+            "shared_story": shared_story,
+            "sibling_draft_ids": sibling_ids,
         },
     )
     db.commit()

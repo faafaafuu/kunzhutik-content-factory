@@ -295,11 +295,19 @@ function renderSteps(summary, contentApproval, videoApproval, finalVideo) {
 function renderReview(approval, summary, plan, finalVideo) {
   if (approval.stage === "content") {
     const scenes = plan?.scenes?.length ? plan.scenes : approval.preview_payload?.scenes || [];
+    const story = approval.preview_payload?.story;
     return `
       <article class="card review-card">
         <p class="review-kicker">Шаг 1 из 2 · Согласование сценария</p>
-        <h2>Проверьте тексты и сценарий</h2>
+        <h2>Проверьте историю и сценарий</h2>
         <p class="muted">Видео ещё не генерировалось — правки сейчас бесплатны. После одобрения запустится платная генерация ролика.</p>
+        ${story
+          ? `<div style="margin-top:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fafbfc">
+              ${story.hook ? `<p style="margin:0;font-weight:700">${escapeHtml(story.hook)}</p>` : ""}
+              <p style="margin:6px 0 0">${escapeHtml(story.caption || "")}</p>
+              ${story.cta ? `<p class="muted small" style="margin:4px 0 0">${escapeHtml(story.cta)}</p>` : ""}
+            </div>`
+          : ""}
         <div class="scene-list">
           ${scenes
             .map(
@@ -364,8 +372,23 @@ function renderScenario(plan, pendingApproval) {
 }
 
 function renderDrafts(drafts) {
-  if (!drafts.length) return "<p class='section-title'>Тексты</p><p class='muted small'>Подписи появятся после анализа фото.</p>";
+  if (!drafts.length) return "<p class='section-title'>Публикация</p><p class='muted small'>Текст появится после анализа фото.</p>";
   const platformNames = { instagram: "Instagram", vk: "ВКонтакте", yandex_maps: "Яндекс Карты" };
+  const shared = drafts.filter((draft) => draft.metadata_json?.shared_story);
+  if (shared.length) {
+    const latest = shared.reduce((a, b) => (b.version > a.version ? b : a));
+    const platforms = [...new Set(drafts.map((draft) => draft.platform))];
+    return `
+      <p class="section-title">Публикация · одна на все площадки</p>
+      <div class="chip-row">
+        ${platforms.map((p) => `<span class="chip accent">${escapeHtml(platformNames[p] || p)}</span>`).join("")}
+      </div>
+      ${latest.title ? `<p style="margin:12px 0 0;font-weight:700">${escapeHtml(latest.title)}</p>` : ""}
+      <p style="margin:6px 0 0">${escapeHtml(latest.caption)}</p>
+      ${latest.cta ? `<p class="muted small" style="margin:4px 0 0">${escapeHtml(latest.cta)}</p>` : ""}
+      ${latest.script_text ? `<p class="muted small" style="margin:10px 0 0">🎙 Озвучка: ${escapeHtml(latest.script_text)}</p>` : ""}
+    `;
+  }
   return `
     <p class="section-title">Тексты для площадок</p>
     <div class="timeline">

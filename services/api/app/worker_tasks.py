@@ -102,6 +102,16 @@ def process_upload_pipeline(upload_id: str) -> None:
             }
             for draft in drafts
         ]
+        shared_story = bool(drafts and (drafts[0].metadata_json or {}).get("shared_story"))
+        story_preview = None
+        if shared_story:
+            story_preview = {
+                "hook": drafts[0].title,
+                "caption": drafts[0].caption,
+                "cta": drafts[0].cta,
+                "voice_script": drafts[0].script_text,
+                "platforms": [draft.platform.value for draft in drafts],
+            }
         if video_mode == "ai_video":
             scene_plan = plan_ai_video_for_upload(db, upload, drafts)
             stage = "content"
@@ -110,6 +120,7 @@ def process_upload_pipeline(upload_id: str) -> None:
                 "dish_name": analysis.dish_name,
                 "analysis_provider": analysis.provider,
                 "drafts": drafts_preview,
+                "story": story_preview,
                 "scene_plan_id": str(scene_plan.id),
                 "scenes": scene_plan.scenes_json,
                 "scene_plan_provider": (scene_plan.metadata_json or {}).get("provider"),
@@ -126,6 +137,7 @@ def process_upload_pipeline(upload_id: str) -> None:
                 "dish_name": analysis.dish_name,
                 "analysis_provider": analysis.provider,
                 "drafts": drafts_preview,
+                "story": story_preview,
                 "mock": analysis.provider.startswith("mock"),
                 "video_mode": video_mode,
                 "video_template": "mascot_story_v1",
@@ -304,11 +316,20 @@ def _format_approval_message(payload: dict) -> str:
         lines.append("Кунжутик принёс сценарий на согласование (видео ещё не генерировалось).")
         lines.append(f"Блюдо: {payload.get('dish_name', 'без названия')}")
         lines.append("")
-        for draft in payload.get("drafts", []):
-            lines.append(f"[{draft['platform']}/{draft['kind']}] {draft['caption']}")
-            if draft.get("cta"):
-                lines.append(f"CTA: {draft['cta']}")
+        story = payload.get("story")
+        if story:
+            platforms = ", ".join(story.get("platforms") or [])
+            lines.append(f"Публикация (одна на все площадки: {platforms}):")
+            lines.append(story.get("caption") or "")
+            if story.get("cta"):
+                lines.append(f"CTA: {story['cta']}")
             lines.append("")
+        else:
+            for draft in payload.get("drafts", []):
+                lines.append(f"[{draft['platform']}/{draft['kind']}] {draft['caption']}")
+                if draft.get("cta"):
+                    lines.append(f"CTA: {draft['cta']}")
+                lines.append("")
         scenes = payload.get("scenes") or []
         if scenes:
             lines.append("Сценарий ролика:")

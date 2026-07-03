@@ -15,23 +15,27 @@ CONTENT_TARGETS: tuple[tuple[ContentPlatform, DraftKind], ...] = (
 
 
 def build_persona_drafts(character_profile: CharacterProfile | None, analysis: AnalysisResult) -> list[dict]:
+    """One story-driven publication shared by every platform: a single LLM call,
+    then per-platform draft rows carrying the same text (publication tasks need one draft per platform)."""
     provider = get_text_generation_provider()
     character = character_profile or _fallback_character_profile(analysis)
     vision_result = _analysis_to_vision_result(analysis)
+    generated = provider.generate_content(
+        analysis=vision_result,
+        character_profile=character,
+        platform="all",
+        kind="story",
+        context={
+            "analysis_result_id": str(analysis.id),
+            "project_id": str(analysis.project_id),
+            "upload_id": str(analysis.upload_id),
+        },
+    )
     drafts: list[dict] = []
     for platform, kind in CONTENT_TARGETS:
-        generated = provider.generate_content(
-            analysis=vision_result,
-            character_profile=character,
-            platform=platform.value,
-            kind=kind.value,
-            context={
-                "analysis_result_id": str(analysis.id),
-                "project_id": str(analysis.project_id),
-                "upload_id": str(analysis.upload_id),
-            },
-        )
-        drafts.append(_generated_to_content_draft_payload(generated, analysis.provider))
+        payload = _generated_to_content_draft_payload(generated, analysis.provider, platform=platform, kind=kind)
+        payload["metadata_json"]["shared_story"] = True
+        drafts.append(payload)
     return drafts
 
 
@@ -49,12 +53,18 @@ def _analysis_to_vision_result(analysis: AnalysisResult) -> VisionAnalysisResult
     )
 
 
-def _generated_to_content_draft_payload(generated: GeneratedContent, analysis_provider: str) -> dict:
+def _generated_to_content_draft_payload(
+    generated: GeneratedContent,
+    analysis_provider: str,
+    *,
+    platform: ContentPlatform | None = None,
+    kind: DraftKind | None = None,
+) -> dict:
     hashtags_line = " ".join(generated.hashtags)
     long_text = generated.caption if not hashtags_line else f"{generated.caption}\n\n{hashtags_line}"
     return {
-        "platform": ContentPlatform(generated.platform),
-        "kind": DraftKind(generated.kind),
+        "platform": platform or ContentPlatform(generated.platform),
+        "kind": kind or DraftKind(generated.kind),
         "title": generated.hook,
         "caption": generated.caption,
         "cta": generated.cta or None,

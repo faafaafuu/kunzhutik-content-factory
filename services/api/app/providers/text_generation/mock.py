@@ -60,6 +60,23 @@ class MockTextGenerationProvider(TextGenerationProvider):
         plating = analysis.plating or "красивая подача"
         ingredient_line = ", ".join(analysis.likely_ingredients[:3]) if analysis.likely_ingredients else "секретные вкусности"
 
+        if platform == "all":
+            fact = (
+                f"Мало кто знает, но у блюда вроде «{dish_name}» всегда есть своя история: "
+                f"{ingredient_line} здесь не случайно — именно это сочетание делает вкус узнаваемым."
+            )
+            return GeneratedContent(
+                platform=platform,
+                kind=kind,
+                hook=f"Одна деталь про {dish_name}, которую вы могли не замечать",
+                caption=f"{fact} Я, Кунжутик, проверил лично: {plating.lower() if plating else 'подача'} и {mood.lower() if mood else 'настроение'} — всё на месте.",
+                cta="Приходите попробовать, пока горячее — расскажу остальное за столом.",
+                hashtags=["#кунжутик", "#вкусно", "#историяблюда"],
+                voice_script=f"Знаете, что прячется в {dish_name}? {ingredient_line}. Смотрите, какая подача — и да, это надо пробовать.",
+                duration_sec=15,
+                raw_response={"provider": self.provider_name, "mode": "mock", "story": True},
+            )
+
         if platform == "instagram":
             return GeneratedContent(
                 platform=platform,
