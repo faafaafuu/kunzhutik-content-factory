@@ -39,11 +39,12 @@ STYLE_PROMPT = (
 )
 
 
-def generate_ai_video_assets_for_upload(db: Session, upload: Upload, drafts: list[ContentDraft], *, actor: str = "worker") -> ScenePlan:
+def plan_ai_video_for_upload(db: Session, upload: Upload, drafts: list[ContentDraft], *, actor: str = "worker") -> ScenePlan:
+    """Stage 1: build the scene plan text only — no paid video generation happens here."""
     _attach_project(db, upload)
     draft = _select_ai_video_draft(drafts)
     total_duration = settings.ai_video_default_duration_sec * settings.ai_video_scenes_count
-    plan = create_scene_plan(
+    return create_scene_plan(
         db,
         upload.id,
         content_draft_id=draft.id,
@@ -52,6 +53,18 @@ def generate_ai_video_assets_for_upload(db: Session, upload: Upload, drafts: lis
         scenes_count=settings.ai_video_scenes_count,
         actor=actor,
     )
+
+
+def produce_ai_video_for_plan(db: Session, scene_plan_id: UUID, *, actor: str = "worker") -> ScenePlan:
+    """Stage 2: generate scenes, voice and the final video for an approved plan."""
+    plan = db.query(ScenePlan).filter(ScenePlan.id == scene_plan_id).first()
+    if not plan:
+        raise ValueError(f"ScenePlan {scene_plan_id} not found")
+    upload = _get_upload(db, plan.upload_id)
+    _attach_project(db, upload)
+    draft = db.query(ContentDraft).filter(ContentDraft.id == plan.content_draft_id).first()
+    if not draft:
+        raise ValueError(f"ContentDraft {plan.content_draft_id} not found")
     generate_scenes(db, plan.id, actor=actor)
     voice_asset = generate_voice_asset_for_draft(db, upload, draft, actor=actor)
     log_event(
@@ -214,6 +227,7 @@ def render_final_video(db: Session, scene_plan_id: UUID, *, actor: str) -> Video
     video_asset = VideoAsset(project_id=plan.project_id, content_draft_id=plan.content_draft_id, status=PipelineStatus.completed, template_name="ai_video_scene_sequence_v1", aspect_ratio=plan.aspect_ratio, asset_id=video_media.id, preview_asset_id=preview_media.id)
     db.add(video_asset)
     plan.status = "ready_for_review"
+    plan.metadata_json = {**(plan.metadata_json or {}), "final_video_media_id": str(video_media.id), "final_preview_media_id": str(preview_media.id)}
     db.flush()
     log_event(db, plan.project_id, "upload", str(plan.upload_id), "ai_video_final.rendered", actor, {"scene_plan_id": str(plan.id), "video_asset_id": str(video_asset.id)})
     db.commit()

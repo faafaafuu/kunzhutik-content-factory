@@ -20,6 +20,7 @@ class ApprovalRead(ORMModel):
     project_id: UUID
     upload_id: UUID
     status: ApprovalStatus
+    stage: str = "video"
     telegram_chat_id: str | None = None
     telegram_message_id: str | None = None
     preview_payload: dict

@@ -40,6 +40,11 @@ class ApprovalStatus(StrEnum):
     regenerate_requested = "regenerate_requested"
 
 
+class ApprovalStage(StrEnum):
+    content = "content"
+    video = "video"
+
+
 class ApprovalTrigger(StrEnum):
     telegram = "telegram"
     dashboard = "dashboard"
