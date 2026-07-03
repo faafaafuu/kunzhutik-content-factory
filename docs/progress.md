@@ -53,6 +53,8 @@ Approval flow: `Upload -> analysis -> drafts + scene plan (text only) -> content
 - VK publisher now uploads the final video (`video.save` -> upload -> `wall.post` attachment) and degrades to a text-only post if the token lacks the video scope.
 - Dashboard redesign: standalone light `admin.css` (Dodo/Yandex-Eda-style), scenario review screen with per-scene texts and approve/regenerate/reject, final video review screen with a player, pipeline progress steps, Russian labels, auto-refresh while the pipeline is busy. `/admin` serves the dashboard.
 - Two-stage smoke passed on mocks: upload -> content approval (4 scenes, zero video assets) -> approve -> video generated once -> video approval with `ai-final-video.mp4` -> approve -> 3 publication tasks -> mock publish OK.
+- One story-driven publication for all platforms: a single LLM call builds the dish story (catchy fact + hook + voice script), per-platform drafts are copies with `shared_story` metadata, regenerating one refreshes copies everywhere; scene plan prompt now builds the reel as a mini-story around the dish; approval preview/TG message/dashboard show the story once with platform chips.
+- Storefront light minimal theme: `styles.css` rewritten on the same tokens as `admin.css` (Dodo/Yandex-Eda style), responsive grid, compact Telegram WebApp mode, per-dish accent tints; smoke passed (storefront 200, menu API 200, full two-stage pipeline with shared story approved end-to-end, shared regenerate bumps all platforms to v2 with one caption).
 
 ## In Progress
 
@@ -131,3 +133,5 @@ Approval flow: `Upload -> analysis -> drafts + scene plan (text only) -> content
 - 2026-07-03: VK publisher uploads the final video via video.save/wall.post attachment with text-only fallback.
 - 2026-07-03: Dashboard redesigned (light minimal admin.css, scenario/video review screens, progress steps, /admin route); login page matched.
 - 2026-07-03: Verified two-stage smoke on mocks end to end including a mock publication run; commits pushed to origin/main.
+- 2026-07-03: One story-driven publication shared by all platforms (single LLM call, shared_story drafts, story-centric scene plan prompt, shared regenerate); dashboard/TG show the story once.
+- 2026-07-03: Storefront switched to the light minimal theme on admin.css tokens; full-cycle smoke passed with the shared story.
