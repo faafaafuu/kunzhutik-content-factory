@@ -2,12 +2,50 @@ from __future__ import annotations
 
 from app.models.character_profile import CharacterProfile
 from app.providers.text_generation.base import TextGenerationProvider
-from app.providers.text_generation.schemas import GeneratedContent
+from app.providers.text_generation.schemas import GeneratedContent, GeneratedScenePlan
 from app.providers.vision.schemas import VisionAnalysisResult
+
+SCENE_STORY = [
+    ("Хук", "Кунжутик как главный 3D-герой входит в кадр рядом с блюдом, замечает его, оживляется и реагирует выразительной мимикой. Не иконка, не стикер, персонаж занимает центр сцены.", "cinematic push-in, shallow depth of field", "curious"),
+    ("Эмоция", "Кунжутик делает короткий дружелюбный жест, вдохновленно реагирует на аромат, вокруг видны пар, свет и аппетитные детали еды. Камера мягко движется вокруг героя.", "medium orbit, warm commercial lighting", "delighted"),
+    ("Показ блюда", "Кунжутик показывает блюдо как ведущий мини-ролика: крупные планы текстуры, соус, свежесть, хруст, затем реакция персонажа в том же 3D-стиле.", "macro food shot with hero reaction cutaway", "proud"),
+    ("CTA", "Финальная 3D-сцена: Кунжутик рядом с блюдом смотрит в камеру, энергично приглашает попробовать, брендовый CTA появляется в конце.", "front hero shot, gentle dolly-in", "friendly"),
+]
 
 
 class MockTextGenerationProvider(TextGenerationProvider):
     provider_name = "mock-text-v1"
+
+    def generate_scene_plan(
+        self,
+        draft_context: dict,
+        character_prompt: str,
+        style_prompt: str,
+        scenes_count: int,
+        total_duration_sec: int,
+        context: dict | None = None,
+    ) -> GeneratedScenePlan:
+        base_duration = max(5, round(total_duration_sec / scenes_count))
+        cta = draft_context.get("cta") or ""
+        title_line = (draft_context.get("title") or draft_context.get("caption") or "")[:90]
+        voice_text = (draft_context.get("script_text") or draft_context.get("caption") or "")[:240]
+        scenes = []
+        for index in range(scenes_count):
+            title, visual, camera, emotion = SCENE_STORY[index % len(SCENE_STORY)]
+            subtitle = cta if index == scenes_count - 1 and cta else title_line
+            scenes.append(
+                {
+                    "scene_number": index + 1,
+                    "duration_sec": base_duration,
+                    "visual_prompt": f"{title}: {visual} Стиль: {style_prompt}",
+                    "voice_text": voice_text,
+                    "subtitle_text": subtitle,
+                    "camera": camera,
+                    "emotion": emotion,
+                    "status": "queued",
+                }
+            )
+        return GeneratedScenePlan(provider=self.provider_name, scenes=scenes, raw_response={"provider": self.provider_name, "mode": "mock"})
 
     def generate_content(
         self,

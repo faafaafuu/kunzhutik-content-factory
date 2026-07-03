@@ -19,6 +19,8 @@ from app.models.upload import Upload
 from app.models.video_asset import VideoAsset
 from app.models.voice_asset import VoiceAsset
 from app.providers.ai_video.factory import get_ai_video_provider
+from app.providers.text_generation.factory import get_text_generation_provider
+from app.providers.text_generation.schemas import GeneratedScenePlan
 from app.providers.video_render.ffmpeg_fallback import FONT_PATH, VIDEO_HEIGHT, VIDEO_WIDTH
 from app.services.audit import log_event
 from app.services.media_generation import _create_media_asset, _write_render_output, generate_voice_asset_for_draft
@@ -81,7 +83,8 @@ def create_scene_plan(
     draft = _get_draft(db, upload_id, content_draft_id)
     duration = total_duration_sec or settings.ai_video_default_duration_sec * (scenes_count or settings.ai_video_scenes_count)
     count = scenes_count or settings.ai_video_scenes_count
-    plan_scenes = _build_mock_scene_plan(draft, duration, count)
+    style_prompt = style_reference or STYLE_PROMPT
+    generated = _generate_scene_plan(draft, style_prompt, duration, count)
     plan = ScenePlan(
         project_id=upload.project_id,
         upload_id=upload.id,
@@ -89,15 +92,15 @@ def create_scene_plan(
         status="draft",
         total_duration_sec=Decimal(str(duration)),
         aspect_ratio=aspect_ratio or settings.ai_video_default_aspect_ratio,
-        style_prompt=style_reference or STYLE_PROMPT,
+        style_prompt=style_prompt,
         character_prompt=CHARACTER_PROMPT,
-        scenes_json=plan_scenes,
-        metadata_json={"provider": "mock-scene-planner-v1", "video_mode": "ai_video"},
+        scenes_json=generated.scenes,
+        metadata_json={"provider": generated.provider, "video_mode": "ai_video", **({"planner_raw": generated.raw_response} if generated.raw_response else {})},
     )
     db.add(plan)
     db.flush()
     _sync_scene_rows(db, plan)
-    log_event(db, upload.project_id, "upload", str(upload.id), "scene_plan.created", actor, {"scene_plan_id": str(plan.id), "scene_count": len(plan_scenes)})
+    log_event(db, upload.project_id, "upload", str(upload.id), "scene_plan.created", actor, {"scene_plan_id": str(plan.id), "scene_count": len(generated.scenes)})
     db.commit()
     db.refresh(plan)
     return plan
@@ -124,9 +127,10 @@ def regenerate_scene_plan(db: Session, scene_plan_id: UUID, *, actor: str, reaso
     if not draft:
         raise HTTPException(status_code=409, detail="Scene plan draft not found")
     count = scenes_count or len(plan.scenes_json or []) or settings.ai_video_scenes_count
-    plan.scenes_json = _build_mock_scene_plan(draft, int(plan.total_duration_sec), count)
+    generated = _generate_scene_plan(draft, plan.style_prompt or STYLE_PROMPT, int(plan.total_duration_sec), count)
+    plan.scenes_json = generated.scenes
     plan.status = "draft"
-    plan.metadata_json = {**(plan.metadata_json or {}), "regenerate_reason": reason, "provider": "mock-scene-planner-v1"}
+    plan.metadata_json = {**(plan.metadata_json or {}), "regenerate_reason": reason, "provider": generated.provider}
     db.query(AIVideoScene).filter(AIVideoScene.scene_plan_id == plan.id).delete()
     db.flush()
     _sync_scene_rows(db, plan)
@@ -218,8 +222,9 @@ def render_final_video(db: Session, scene_plan_id: UUID, *, actor: str) -> Video
 
 
 def _sync_scene_rows(db: Session, plan: ScenePlan) -> None:
+    planner = (plan.metadata_json or {}).get("provider") or "mock"
     for scene_payload in plan.scenes_json:
-        db.add(AIVideoScene(project_id=plan.project_id, upload_id=plan.upload_id, scene_plan_id=plan.id, content_draft_id=plan.content_draft_id, scene_number=scene_payload["scene_number"], status=scene_payload.get("status", "queued"), provider="mock", duration_sec=Decimal(str(scene_payload["duration_sec"])), visual_prompt=scene_payload["visual_prompt"], voice_text=scene_payload.get("voice_text"), subtitle_text=scene_payload.get("subtitle_text"), camera=scene_payload.get("camera"), emotion=scene_payload.get("emotion"), raw_response={}))
+        db.add(AIVideoScene(project_id=plan.project_id, upload_id=plan.upload_id, scene_plan_id=plan.id, content_draft_id=plan.content_draft_id, scene_number=scene_payload["scene_number"], status=scene_payload.get("status", "queued"), provider=planner, duration_sec=Decimal(str(scene_payload["duration_sec"])), visual_prompt=scene_payload["visual_prompt"], voice_text=scene_payload.get("voice_text"), subtitle_text=scene_payload.get("subtitle_text"), camera=scene_payload.get("camera"), emotion=scene_payload.get("emotion"), raw_response={}))
     db.flush()
 
 
@@ -227,13 +232,17 @@ def _generate_single_scene(db: Session, *, plan: ScenePlan, scene: AIVideoScene,
     scene.status = "generating"
     db.flush()
     try:
+        context = {"scene_number": scene.scene_number, "subtitle_text": scene.subtitle_text}
+        source_photo = _source_photo(db, upload)
+        if source_photo:
+            context["image_reference_bytes"], context["image_reference_mime"] = source_photo
         result = provider.generate_scene(
             prompt=f"{plan.character_prompt}\n\n{scene.visual_prompt}",
             image_reference_url=None,
             character_reference_url=None,
             duration_sec=float(scene.duration_sec),
             aspect_ratio=plan.aspect_ratio,
-            context={"scene_number": scene.scene_number, "subtitle_text": scene.subtitle_text},
+            context=context,
         )
         scene_file = _write_render_output(result.video_bytes, result.video_url, Path(tempfile.mkdtemp(prefix="kunzhutik-scene-save-")) / f"scene-{scene.scene_number}.mp4")
         media = _create_media_asset(
@@ -260,20 +269,23 @@ def _generate_single_scene(db: Session, *, plan: ScenePlan, scene: AIVideoScene,
         scene.error_message = str(exc)
 
 
-def _build_mock_scene_plan(draft: ContentDraft, total_duration_sec: int, scenes_count: int) -> list[dict]:
-    base_duration = max(5, round(total_duration_sec / scenes_count))
-    story = [
-        ("Хук", "Кунжутик как главный 3D-герой входит в кадр рядом с блюдом, замечает его, оживляется и реагирует выразительной мимикой. Не иконка, не стикер, персонаж занимает центр сцены.", "cinematic push-in, shallow depth of field", "curious"),
-        ("Эмоция", "Кунжутик делает короткий дружелюбный жест, вдохновленно реагирует на аромат, вокруг видны пар, свет и аппетитные детали еды. Камера мягко движется вокруг героя.", "medium orbit, warm commercial lighting", "delighted"),
-        ("Показ блюда", "Кунжутик показывает блюдо как ведущий мини-ролика: крупные планы текстуры, соус, свежесть, хруст, затем реакция персонажа в том же 3D-стиле.", "macro food shot with hero reaction cutaway", "proud"),
-        ("CTA", "Финальная 3D-сцена: Кунжутик рядом с блюдом смотрит в камеру, энергично приглашает попробовать, брендовый CTA появляется в конце.", "front hero shot, gentle dolly-in", "friendly"),
-    ]
-    scenes = []
-    for index in range(scenes_count):
-        title, visual, camera, emotion = story[index % len(story)]
-        subtitle = draft.cta if index == scenes_count - 1 and draft.cta else (draft.title or draft.caption)[:90]
-        scenes.append({"scene_number": index + 1, "duration_sec": base_duration, "visual_prompt": f"{title}: {visual} Стиль: {STYLE_PROMPT}", "voice_text": (draft.script_text or draft.caption)[:240], "subtitle_text": subtitle, "camera": camera, "emotion": emotion, "status": "queued"})
-    return scenes
+def _generate_scene_plan(draft: ContentDraft, style_prompt: str, total_duration_sec: int, scenes_count: int) -> GeneratedScenePlan:
+    provider = get_text_generation_provider()
+    draft_context = {
+        "title": draft.title,
+        "caption": draft.caption,
+        "cta": draft.cta,
+        "script_text": draft.script_text,
+        "platform": draft.platform.value,
+        "kind": draft.kind.value,
+    }
+    return provider.generate_scene_plan(
+        draft_context,
+        character_prompt=CHARACTER_PROMPT,
+        style_prompt=style_prompt,
+        scenes_count=scenes_count,
+        total_duration_sec=total_duration_sec,
+    )
 
 
 def _select_ai_video_draft(drafts: list[ContentDraft]) -> ContentDraft:
@@ -306,6 +318,18 @@ def _get_draft(db: Session, upload_id: UUID, content_draft_id: UUID | None) -> C
 
 def _attach_project(db: Session, upload: Upload) -> None:
     upload.project = db.query(Project).filter(Project.id == upload.project_id).first()
+
+
+def _source_photo(db: Session, upload: Upload) -> tuple[bytes, str] | None:
+    media = (
+        db.query(MediaAsset)
+        .filter(MediaAsset.upload_id == upload.id, MediaAsset.kind == AssetKind.source_photo)
+        .order_by(MediaAsset.created_at.asc())
+        .first()
+    )
+    if not media:
+        return None
+    return download_bytes(media.storage_key), media.mime_type
 
 
 def _concat_scenes(concat_file: Path, output_path: Path) -> None:

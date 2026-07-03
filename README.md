@@ -1,35 +1,25 @@
 # Kunzhutik Content Factory
 
-Production-oriented foundation for an automated restaurant content pipeline around the character `Кунжутик`.
+Automated restaurant content pipeline around the character `Кунжутик`: dish photo in, ready-to-approve vertical AI video out.
 
-## Stage 1 Scope
+## Current State
 
-This repository implements the first vertical slice:
+Full vertical slice works end to end:
 
-- monorepo bootstrap
-- Docker Compose infrastructure
-- FastAPI backend
-- PostgreSQL schema and Alembic migration
-- Redis and Celery worker
-- MinIO object storage
-- Telegram approval skeleton
-- initial upload pipeline:
-  - upload photo
-  - store media in object storage
-  - create `Upload` + `MediaAsset`
-  - enqueue analysis/content draft generation
-  - create `ApprovalTask`
-  - optionally dispatch preview to Telegram
+`Upload -> MediaAsset -> AnalysisResult -> ContentDraft -> ScenePlan/AIVideoScene -> VoiceAsset -> VideoAsset -> ApprovalTask -> PublicationTask -> PublicationResult`
 
-Mocked in Stage 1:
+Every external capability sits behind a provider architecture with a local/mock fallback, switched via `.env`:
 
-- dish vision analysis
-- persona text generation
-- video rendering
-- voice synthesis
-- platform publication
+| Area | Providers | Env switch |
+| --- | --- | --- |
+| Vision (dish photo analysis) | OpenRouter, mock | `VISION_PROVIDER` |
+| Text + scene plans | OpenRouter, mock | `TEXT_PROVIDER` |
+| TTS | ElevenLabs, Yandex SpeechKit, espeak mock | `TTS_PROVIDER` |
+| AI video scenes (primary) | fal.ai (Seedance/PixVerse/Kling via `AI_VIDEO_FAL_MODEL`), mock | `AI_VIDEO_PROVIDER` |
+| Template video (legacy) | Creatomate, ffmpeg | `VIDEO_PROVIDER`, `VIDEO_MODE=template` |
+| Publishing | VK (text post), Instagram/Yandex manual packages, mock | `PUBLISHER_PROVIDER` |
 
-They are represented in the schema and service boundaries so the next stages can replace mocks with real adapters.
+Without API keys everything runs on mocks/local fallbacks; `GENERATION_PROFILE=production` fails fast unless real providers are fully configured. Operator dashboard (auth, roles, provider diagnostics), Telegram approval bot, and Telegram storefront are included. See `docs/progress.md` for the detailed status log.
 
 ## Architecture Summary
 
@@ -53,7 +43,7 @@ Planned service boundaries:
 - `publishing-service`
 - `admin-panel`
 
-Stage 1 keeps them inside a single backend codebase with clean module boundaries to avoid premature distributed complexity.
+All of these currently live inside a single backend codebase with clean module boundaries to avoid premature distributed complexity.
 
 ## Repository Layout
 
@@ -93,16 +83,26 @@ kunzhutik-content-factory/
 cp .env.example .env
 ```
 
-2. Start the stack:
+2. Start the stack in the background:
 
 ```bash
-docker compose up --build
+docker compose up -d --build
 ```
+
+All long-running containers use `restart: unless-stopped`, so Docker will bring them back after a crash or host reboot, unless you explicitly stop them.
 
 3. Apply migrations:
 
 ```bash
 docker compose exec api alembic upgrade head
+```
+
+Useful operations:
+
+```bash
+docker compose ps
+docker compose logs -f telegram-bot
+docker compose restart telegram-bot
 ```
 
 4. Seed a default project and character:
@@ -182,4 +182,3 @@ curl http://localhost:8000/api/v1/uploads/<UPLOAD_ID>
 - Telegram approval is a real bot skeleton, but still lightweight.
 - Publication to platforms is not implemented in Stage 1.
 - Push to remote Git hosting requires configured remote credentials.
-

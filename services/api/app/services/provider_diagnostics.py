@@ -80,6 +80,25 @@ def get_provider_diagnostics() -> list[ProviderDiagnostic]:
             notes=["Creatomate can return external URLs; the pipeline downloads them into object storage."],
         ),
         _diagnostic(
+            area="ai_video",
+            selected=settings.ai_video_provider,
+            local={"mock", "fallback"},
+            required={
+                "fal": {
+                    "AI_VIDEO_FAL_KEY": settings.ai_video_fal_key,
+                    "AI_VIDEO_FAL_MODEL": settings.ai_video_fal_model,
+                },
+                "kling": {"KLING_API_KEY": settings.kling_api_key},
+                "runway": {"RUNWAY_API_KEY": settings.runway_api_key},
+            },
+            fallback=fallback,
+            production_ready=_ai_video_production_ready() and not fallback,
+            notes=[
+                "VIDEO_MODE=ai_video is the primary pipeline; mock renders ffmpeg placeholders.",
+                "AI_VIDEO_PROVIDER=fal covers Seedance/PixVerse/Kling models via AI_VIDEO_FAL_MODEL.",
+            ],
+        ),
+        _diagnostic(
             area="publishing",
             selected=settings.publisher_provider,
             local={"mock", "manual", "manual_package", "instagram_manual", "yandex_manual"},
@@ -121,6 +140,17 @@ def _diagnostic(
         missing_env=missing,
         notes=notes,
     )
+
+
+def _ai_video_production_ready() -> bool:
+    provider = settings.ai_video_provider.lower().strip()
+    if provider == "fal":
+        return bool(settings.ai_video_fal_key and settings.ai_video_fal_model)
+    if provider == "kling":
+        return bool(settings.kling_api_key)
+    if provider == "runway":
+        return bool(settings.runway_api_key)
+    return False
 
 
 def _tts_production_ready() -> bool:

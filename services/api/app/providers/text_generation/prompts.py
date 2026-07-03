@@ -39,6 +39,48 @@ def build_system_prompt(character_profile: CharacterProfile) -> str:
     )
 
 
+def build_scene_plan_system_prompt(character_prompt: str, style_prompt: str) -> str:
+    return "\n\n".join(
+        [
+            "Ты — режиссер коротких вертикальных food-роликов (Reels/Clips) для ресторана.",
+            PERSONA_RULES,
+            f"Требование к персонажу в каждой сцене:\n{character_prompt}",
+            f"Визуальный стиль:\n{style_prompt}",
+            "Верни только JSON без markdown.",
+        ]
+    )
+
+
+def build_scene_plan_user_prompt(
+    draft_context: dict,
+    scenes_count: int,
+    total_duration_sec: int,
+    context: dict | None = None,
+) -> str:
+    payload = {
+        "draft": draft_context,
+        "scenes_count": scenes_count,
+        "total_duration_sec": total_duration_sec,
+        "context": context or {},
+        "scene_json_fields": {
+            "scene_number": "int, с 1",
+            "duration_sec": "int, секунды сцены, сумма примерно равна total_duration_sec",
+            "visual_prompt": "детальный prompt сцены для image-to-video генерации: что делает Кунжутик, как показано блюдо, движение камеры, свет; на русском или английском",
+            "voice_text": "фраза закадрового голоса для этой сцены, русский, короткая",
+            "subtitle_text": "субтитр до 90 символов, русский",
+            "camera": "краткое описание движения камеры, английский",
+            "emotion": "эмоция персонажа одним словом, английский",
+        },
+    }
+    return (
+        "Составь план сцен для одного вертикального ролика о блюде. "
+        f"Ровно {scenes_count} сцен: хук в первой, показ блюда в середине, CTA в последней. "
+        "Каждая сцена должна быть самодостаточным prompt для видео-генерации по опорному фото блюда. "
+        'Верни строго JSON вида {"scenes": [ ... ]} по scene_json_fields.\n\n'
+        f"{json.dumps(payload, ensure_ascii=False)}"
+    )
+
+
 def build_user_prompt(
     analysis: VisionAnalysisResult,
     platform: str,

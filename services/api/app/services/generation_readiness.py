@@ -4,7 +4,7 @@ from app.core.config import settings
 
 
 REAL_TTS_PROVIDERS = {"elevenlabs", "yandex_speechkit", "yandex-speechkit", "yandex"}
-REAL_AI_VIDEO_PROVIDERS = {"kling", "runway", "pika", "luma"}
+REAL_AI_VIDEO_PROVIDERS = {"fal", "kling", "runway", "pika", "luma"}
 
 
 def validate_generation_providers_ready() -> None:
@@ -36,7 +36,9 @@ def validate_generation_providers_ready() -> None:
     if video_mode == "ai_video":
         ai_video_provider = settings.ai_video_provider.lower().strip()
         if ai_video_provider not in REAL_AI_VIDEO_PROVIDERS:
-            missing.append("AI_VIDEO_PROVIDER=kling or runway")
+            missing.append("AI_VIDEO_PROVIDER=fal, kling or runway")
+        elif ai_video_provider == "fal" and not settings.ai_video_fal_key:
+            missing.append("AI_VIDEO_FAL_KEY")
         elif ai_video_provider == "kling" and not settings.kling_api_key:
             missing.append("KLING_API_KEY")
         elif ai_video_provider == "runway" and not settings.runway_api_key:

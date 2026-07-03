@@ -22,3 +22,9 @@ class GeneratedContent(BaseModel):
         if isinstance(value, str):
             return [item.strip() for item in value.split() if item.strip()]
         return [str(item).strip() for item in value if str(item).strip()]
+
+
+class GeneratedScenePlan(BaseModel):
+    provider: str
+    scenes: list[dict]
+    raw_response: dict = Field(default_factory=dict)
