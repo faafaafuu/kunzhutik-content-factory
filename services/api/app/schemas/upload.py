@@ -89,6 +89,7 @@ class UploadDraftRead(ORMModel):
 class UploadApprovalRead(ORMModel):
     id: UUID
     status: ApprovalStatus
+    stage: str = "video"
     telegram_chat_id: str | None = None
     telegram_message_id: str | None = None
     preview_payload: dict
