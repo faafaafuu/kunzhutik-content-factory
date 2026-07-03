@@ -33,6 +33,7 @@ def telegram_storefront() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@router.get("/admin", response_class=HTMLResponse, include_in_schema=False)
 @router.get("/admin/orders", response_class=HTMLResponse, include_in_schema=False)
 def storefront_admin(request: Request, db: Session = Depends(get_db)):
     try:
